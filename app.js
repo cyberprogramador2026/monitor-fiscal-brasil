@@ -20,7 +20,7 @@ const severityOrder = {
   LOW: 1,
 };
 
-const today = new Date("2026-07-07T12:00:00-03:00");
+const today = brazilDateAtNoon(new Date());
 
 const state = {
   view: "dashboard",
@@ -50,11 +50,20 @@ function loadSeededCollection(key, fallback) {
     const savedItems = JSON.parse(saved);
     if (!Array.isArray(savedItems)) return structuredClone(fallback);
 
-    const savedIds = new Set(savedItems.map((item) => item.id));
-    const newSeedItems = fallback.filter((item) => !savedIds.has(item.id));
-    if (!newSeedItems.length) return savedItems;
+    const seedsById = new Map(fallback.map((item) => [item.id, item]));
+    const savedWithSeedUpdates = savedItems.map((item) => {
+      const seed = seedsById.get(item.id);
+      return seed ? { ...structuredClone(seed), ...item } : item;
+    });
 
-    const merged = [...structuredClone(newSeedItems), ...savedItems];
+    const savedIds = new Set(savedWithSeedUpdates.map((item) => item.id));
+    const newSeedItems = fallback.filter((item) => !savedIds.has(item.id));
+    if (!newSeedItems.length) {
+      saveCollection(key, savedWithSeedUpdates);
+      return savedWithSeedUpdates;
+    }
+
+    const merged = [...structuredClone(newSeedItems), ...savedWithSeedUpdates];
     saveCollection(key, merged);
     return merged;
   } catch {
@@ -84,6 +93,19 @@ function formatDate(value) {
     month: "2-digit",
     year: "numeric",
   }).format(new Date(`${value}T12:00:00-03:00`));
+}
+
+function brazilDateAtNoon(value) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  })
+    .formatToParts(value)
+    .reduce((acc, part) => ({ ...acc, [part.type]: part.value }), {});
+
+  return new Date(`${parts.year}-${parts.month}-${parts.day}T12:00:00-03:00`);
 }
 
 function addDays(value, amount) {
@@ -427,7 +449,7 @@ function renderVigenciaRuler(changes) {
       </div>
       <div class="ruler-legend">
         <span>Publicacoes oficiais e obrigatoriedades perto de hoje</span>
-        <strong>07/07/2026</strong>
+        <strong>${formatDate(today.toISOString().slice(0, 10))}</strong>
       </div>
     </div>
   `;
@@ -505,8 +527,21 @@ function renderAvisos() {
 }
 
 function renderFilters() {
-  const ufs = ["NACIONAL", ...new Set(store.sources.map((source) => source.uf).filter(Boolean))];
-  const documents = [...new Set(store.sources.flatMap((source) => source.documents))].sort();
+  const ufs = [
+    "NACIONAL",
+    ...new Set(
+      [
+        ...store.sources.map((source) => source.uf),
+        ...store.changes.map((change) => change.uf),
+      ].filter(Boolean),
+    ),
+  ];
+  const documents = [
+    ...new Set([
+      ...store.sources.flatMap((source) => source.documents),
+      ...store.changes.flatMap((change) => change.documents),
+    ]),
+  ].sort();
   return `
     <section class="filters" aria-label="Filtros">
       <label>
