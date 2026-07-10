@@ -30,6 +30,7 @@ const state = {
   severity: "ALL",
   status: "ALL",
   selectedChangeId: "chg-nfe-nt-2026",
+  rulerStartDay: -30,
   calendarMonth: new Date("2026-07-01T00:00:00-03:00"),
 };
 
@@ -114,10 +115,19 @@ function addDays(value, amount) {
   return date.toISOString().slice(0, 10);
 }
 
+function todayIso() {
+  return today.toISOString().slice(0, 10);
+}
+
 function dayDistance(value) {
   if (!value) return null;
   const date = new Date(`${value}T12:00:00-03:00`);
   return Math.round((date - today) / 86400000);
+}
+
+function offsetLabel(value) {
+  if (value === 0) return "Hoje";
+  return value > 0 ? `+${value}d` : `${value}d`;
 }
 
 function hashNumber(value) {
@@ -331,10 +341,9 @@ function renderDashboard() {
     total: enriched.filter((change) => change.severity === severity).length,
   }));
   const maxSeverity = Math.max(...bySeverity.map((item) => item.total), 1);
-  const urgent = enriched
+  const timelineChanges = enriched
     .filter((change) => dayDistance(change.effectiveDate) !== null)
-    .sort((a, b) => dayDistance(a.effectiveDate) - dayDistance(b.effectiveDate))
-    .slice(0, 5);
+    .sort((a, b) => dayDistance(a.effectiveDate) - dayDistance(b.effectiveDate));
 
   return `
     <section class="view-grid">
@@ -348,7 +357,7 @@ function renderDashboard() {
             Executar verificacao
           </button>
         </div>
-        ${renderVigenciaRuler(urgent)}
+        ${renderVigenciaRuler(timelineChanges)}
       </div>
 
       <div class="panel">
@@ -406,26 +415,44 @@ function renderDashboard() {
 }
 
 function renderVigenciaRuler(changes) {
-  const rangeStart = -15;
-  const rangeEnd = 90;
+  const rangeStart = state.rulerStartDay;
+  const rangeEnd = rangeStart + 120;
   const rangeSpan = rangeEnd - rangeStart;
-  const ticks = [-10, 0, 15, 30, 60, 90];
+  const ticks = Array.from({ length: 5 }, (_, index) => rangeStart + index * 30);
   const positioned = changes
     .map((change) => ({ ...change, distance: dayDistance(change.effectiveDate) }))
-    .filter((change) => change.distance !== null && change.distance >= rangeStart && change.distance <= rangeEnd);
+    .filter((change) => change.distance !== null && change.distance >= rangeStart && change.distance <= rangeEnd)
+    .map((change, index) => ({ ...change, lane: index % 3 }));
+  const beforeWindow = changes.filter((change) => dayDistance(change.effectiveDate) < rangeStart).length;
+  const afterWindow = changes.filter((change) => dayDistance(change.effectiveDate) > rangeEnd).length;
+  const windowStartDate = formatDate(addDays(todayIso(), rangeStart));
+  const windowEndDate = formatDate(addDays(todayIso(), rangeEnd));
 
   return `
     <div class="vigencia-ruler" aria-label="Regua de vigencia fiscal">
+      <div class="ruler-controls">
+        <div class="ruler-window-copy">
+          <strong>${windowStartDate} a ${windowEndDate}</strong>
+          <span>${positioned.length} mudancas nesta janela</span>
+        </div>
+        <div class="ruler-nav" aria-label="Navegar na regua de vigencia">
+          <button type="button" data-action="ruler-prev" title="Voltar 30 dias" aria-label="Voltar 30 dias">‹</button>
+          <button type="button" data-action="ruler-today">Hoje</button>
+          <button type="button" data-action="ruler-next" title="Avancar 30 dias" aria-label="Avancar 30 dias">›</button>
+        </div>
+      </div>
       <div class="ruler-track">
         <span class="ruler-axis"></span>
-        <span class="ruler-today" style="left: ${((0 - rangeStart) / rangeSpan) * 100}%">
-          <span>HOJE</span>
-        </span>
+        ${
+          rangeStart <= 0 && rangeEnd >= 0
+            ? `<span class="ruler-today" style="left: ${((0 - rangeStart) / rangeSpan) * 100}%"><span>HOJE</span></span>`
+            : ""
+        }
         ${ticks
           .map(
             (tick) => `
               <span class="ruler-tick" style="left: ${((tick - rangeStart) / rangeSpan) * 100}%">
-                ${tick === 0 ? "" : tick > 0 ? `+${tick}d` : `${tick}d`}
+                ${offsetLabel(tick)}
               </span>
             `,
           )
@@ -438,7 +465,9 @@ function renderVigenciaRuler(changes) {
                 type="button"
                 data-action="select-change"
                 data-id="${change.id}"
-                style="left: ${((change.distance - rangeStart) / rangeSpan) * 100}%"
+                style="left: ${((change.distance - rangeStart) / rangeSpan) * 100}%; top: ${
+                  54 + change.lane * 26
+                }px"
                 title="${escapeHtml(change.title)} - ${formatDate(change.effectiveDate)}"
               >
                 <span>${escapeHtml(change.protocol)}</span>
@@ -446,10 +475,37 @@ function renderVigenciaRuler(changes) {
             `,
           )
           .join("")}
+        ${
+          positioned.length
+            ? ""
+            : `<div class="ruler-empty">Sem mudancas com prazo nesta janela.</div>`
+        }
       </div>
       <div class="ruler-legend">
-        <span>Publicacoes oficiais e obrigatoriedades perto de hoje</span>
-        <strong>${formatDate(today.toISOString().slice(0, 10))}</strong>
+        <span>${beforeWindow} anteriores fora da janela</span>
+        <strong>Hoje: ${formatDate(todayIso())}</strong>
+        <span>${afterWindow} futuras fora da janela</span>
+      </div>
+      <div class="ruler-window-list" aria-label="Mudancas da janela selecionada">
+        ${
+          positioned.length
+            ? positioned
+                .slice()
+                .sort((a, b) => a.distance - b.distance)
+                .map(
+                  (change) => `
+                    <button class="ruler-window-item" type="button" data-action="select-change" data-id="${
+                      change.id
+                    }">
+                      <span class="${severityClass(change.severity)}">${severityLabels[change.severity]}</span>
+                      <strong>${escapeHtml(change.title)}</strong>
+                      <em>${formatDate(change.effectiveDate)}</em>
+                    </button>
+                  `,
+                )
+                .join("")
+            : `<div class="ruler-window-empty">Use as setas para navegar ate uma janela com mudancas.</div>`
+        }
       </div>
     </div>
   `;
@@ -963,6 +1019,18 @@ function handleAction(action, id) {
     "export-csv": exportCsv,
     "simulate-check": () => simulateCheck(),
     "check-source": () => simulateCheck(id),
+    "ruler-prev": () => {
+      state.rulerStartDay -= 30;
+      render();
+    },
+    "ruler-next": () => {
+      state.rulerStartDay += 30;
+      render();
+    },
+    "ruler-today": () => {
+      state.rulerStartDay = -30;
+      render();
+    },
     "open-source": () => {
       const source = byId(store.sources, id);
       if (source) window.open(source.url, "_blank", "noopener");

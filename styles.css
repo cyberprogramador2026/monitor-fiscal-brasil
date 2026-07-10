@@ -726,15 +726,65 @@ select {
   gap: 14px;
 }
 
+.ruler-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfbf8;
+}
+
+.ruler-window-copy {
+  display: grid;
+  gap: 2px;
+}
+
+.ruler-window-copy strong {
+  font-size: 0.92rem;
+}
+
+.ruler-window-copy span {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.ruler-nav {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.ruler-nav button {
+  min-width: 34px;
+  min-height: 32px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink);
+  font-weight: 900;
+}
+
+.ruler-nav button:hover {
+  background: #eef3ef;
+}
+
 .ruler-track {
   position: relative;
-  height: 128px;
+  height: 176px;
   margin: 2px 4px 0;
 }
 
 .ruler-axis {
   position: absolute;
-  top: 58px;
+  top: 84px;
   left: 0;
   right: 0;
   height: 2px;
@@ -743,7 +793,7 @@ select {
 
 .ruler-today {
   position: absolute;
-  top: 26px;
+  top: 32px;
   bottom: 24px;
   width: 2px;
   background: var(--ink);
@@ -761,7 +811,7 @@ select {
 
 .ruler-tick {
   position: absolute;
-  top: 72px;
+  top: 98px;
   transform: translateX(-50%);
   color: var(--muted);
   font-family: "JetBrains Mono", "Courier New", monospace;
@@ -770,7 +820,6 @@ select {
 
 .ruler-marker {
   position: absolute;
-  top: 50px;
   display: grid;
   width: 17px;
   height: 17px;
@@ -785,7 +834,7 @@ select {
 
 .ruler-marker span {
   position: absolute;
-  top: -34px;
+  top: -27px;
   left: 50%;
   min-width: 78px;
   transform: translateX(-50%);
@@ -794,6 +843,7 @@ select {
   font-size: 0.66rem;
   font-weight: 800;
   text-align: center;
+  white-space: nowrap;
 }
 
 .marker-critical {
@@ -818,6 +868,8 @@ select {
 
 .ruler-legend {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   color: var(--muted);
@@ -828,6 +880,68 @@ select {
   color: var(--ink);
   font-family: "JetBrains Mono", "Courier New", monospace;
   font-size: 0.78rem;
+}
+
+.ruler-empty {
+  position: absolute;
+  top: 58px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 10px;
+  border: 1px dashed #aab8b1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.ruler-window-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.ruler-window-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  min-height: 48px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  text-align: left;
+}
+
+.ruler-window-item:hover {
+  border-color: #aab8b1;
+  background: #f4faf8;
+}
+
+.ruler-window-item strong {
+  overflow: hidden;
+  font-size: 0.84rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ruler-window-item em {
+  color: var(--muted);
+  font-family: "JetBrains Mono", "Courier New", monospace;
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.ruler-window-empty {
+  grid-column: 1 / -1;
+  padding: 12px;
+  border: 1px dashed #aab8b1;
+  border-radius: 8px;
+  color: var(--muted);
+  text-align: center;
 }
 
 .analysis-list {
@@ -1241,14 +1355,35 @@ td span {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  .ruler-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .ruler-nav {
+    align-self: flex-start;
+  }
+
   .ruler-track {
-    height: 150px;
+    height: 190px;
   }
 
   .ruler-marker span {
-    top: -38px;
+    top: -30px;
     min-width: 58px;
     font-size: 0.58rem;
+  }
+
+  .ruler-window-list {
+    grid-template-columns: 1fr;
+  }
+
+  .ruler-window-item {
+    grid-template-columns: 1fr;
+  }
+
+  .ruler-window-item strong {
+    white-space: normal;
   }
 
   .analysis-row,
