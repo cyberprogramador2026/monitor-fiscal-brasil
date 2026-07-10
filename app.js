@@ -193,6 +193,12 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+function compactText(value, limit = 150) {
+  const text = String(value ?? "").replace(/\s+/g, " ").trim();
+  if (text.length <= limit) return text;
+  return `${text.slice(0, limit - 3).trim()}...`;
+}
+
 function severityClass(severity) {
   return `severity severity-${severity.toLowerCase()}`;
 }
@@ -816,8 +822,15 @@ function renderCalendario() {
                   ${cell.events
                     .map(
                       (event) => `
-                        <button class="calendar-event ${event.severity.toLowerCase()}" type="button" data-action="select-change" data-id="${event.changeId}">
-                          ${escapeHtml(event.title)}
+                        <button
+                          class="calendar-event ${event.severity.toLowerCase()}"
+                          type="button"
+                          data-action="select-change"
+                          data-id="${event.changeId}"
+                          aria-label="${escapeHtml(event.ariaLabel)}"
+                        >
+                          <span class="calendar-event-title">${escapeHtml(event.displayTitle)}</span>
+                          ${renderCalendarTooltip(event)}
                         </button>
                       `,
                     )
@@ -836,17 +849,56 @@ function enrichedCalendarEvents() {
   return store.changes
     .map(enrichedChange)
     .filter((change) => change.status !== "IGNORED" && change.effectiveDate)
-    .map((change) => ({
-      id: `cal-${change.id}`,
-      title: change.title,
-      date: change.effectiveDate,
-      severity: change.severity,
-      status: change.status,
-      uf: change.uf,
-      documents: change.documents,
-      sourceId: change.sourceId,
-      changeId: change.id,
-    }));
+    .map((change) => {
+      const source = sourceFor(change);
+      const displayTitle = calendarEventTitle(change, source);
+      const evidence = change.evidence || (change.evidenceUrl ? "Arquivo oficial disponivel" : "Sem evidencia registrada");
+      return {
+        id: `cal-${change.id}`,
+        title: change.title,
+        displayTitle,
+        date: change.effectiveDate,
+        severity: change.severity,
+        status: change.status,
+        uf: change.uf,
+        documents: change.documents,
+        sourceId: change.sourceId,
+        sourceName: source.name,
+        changeId: change.id,
+        summary: compactText(change.summary, 170),
+        changedExcerpt: compactText(change.changedExcerpt, 170),
+        impact: compactText(change.impact, 140),
+        evidence: compactText(evidence, 110),
+        diffBefore: compactText(change.diffBefore, 110),
+        diffAfter: compactText(change.diffAfter, 110),
+        effectiveDate: change.effectiveDate,
+        ariaLabel: `${displayTitle}. ${change.summary}. Trecho: ${change.changedExcerpt}. Evidencia: ${evidence}. Vigencia: ${formatDate(change.effectiveDate)}.`,
+      };
+    });
+}
+
+function calendarEventTitle(change, source) {
+  if (!/alteracao detectada/i.test(change.title)) return change.title;
+  const subject =
+    change.theme && change.theme !== "Outro" ? change.theme : change.documents.slice(0, 2).join(", ");
+  return `${source.name}: ${subject}`;
+}
+
+function renderCalendarTooltip(event) {
+  return `
+    <span class="calendar-tooltip" role="tooltip">
+      <strong>${escapeHtml(event.title)}</strong>
+      <span><b>Fonte:</b> ${escapeHtml(event.sourceName)}</span>
+      <span><b>Documento:</b> ${escapeHtml(event.documents.join(", "))}</span>
+      <span><b>Vigencia:</b> ${formatDate(event.effectiveDate)}</span>
+      <span><b>Resumo:</b> ${escapeHtml(event.summary)}</span>
+      <span><b>Trecho:</b> ${escapeHtml(event.changedExcerpt)}</span>
+      <span><b>Antes:</b> ${escapeHtml(event.diffBefore)}</span>
+      <span><b>Depois:</b> ${escapeHtml(event.diffAfter)}</span>
+      <span><b>Evidencia:</b> ${escapeHtml(event.evidence)}</span>
+      <em>Clique para abrir o aviso completo.</em>
+    </span>
+  `;
 }
 
 function buildCalendarCells(month, events) {
