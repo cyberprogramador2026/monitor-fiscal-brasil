@@ -145,6 +145,21 @@ function severityClass(severity) {
   return `severity severity-${severity.toLowerCase()}`;
 }
 
+function renderSeverityHelp(extraClass = "") {
+  return `
+    <details class="help-popover ${extraClass}">
+      <summary aria-label="Ver regra operacional de criticidade" title="Regra operacional de criticidade">?</summary>
+      <div class="help-card" role="note">
+        <strong>Regra operacional</strong>
+        <p><b>Critica:</b> impacto em emissao, autorizacao, homologacao, producao, schema XML, webservice ou prazo obrigatorio proximo.</p>
+        <p><b>Alta:</b> NT, schema, regra fiscal, cBenef, Reforma Tributaria, SPED ou documento fiscal relevante para Fiscal, Dev, Suporte e CS.</p>
+        <p><b>Media:</b> mudanca importante para acompanhamento, sem impacto operacional imediato.</p>
+        <p><b>Baixa:</b> ajuste visual, comunicado informativo ou alteracao sem efeito fiscal pratico.</p>
+      </div>
+    </details>
+  `;
+}
+
 function statusClass(status) {
   return `status status-${status.toLowerCase().replace("_", "-")}`;
 }
@@ -299,7 +314,10 @@ function renderDashboard() {
       <div class="panel">
         <div class="panel-heading">
           <div>
-            <p class="eyebrow">Criticidade</p>
+            <div class="eyebrow-line">
+              <p class="eyebrow">Criticidade</p>
+              ${renderSeverityHelp("help-align-right")}
+            </div>
             <h2>Impacto fiscal</h2>
           </div>
         </div>
@@ -480,8 +498,11 @@ function renderFilters() {
             .join("")}
         </select>
       </label>
-      <label>
-        <span>Criticidade</span>
+      <div class="filter-field">
+        <div class="field-label">
+          <span>Criticidade</span>
+          ${renderSeverityHelp()}
+        </div>
         <select data-filter="severity">
           <option value="ALL">Todas</option>
           ${Object.entries(severityLabels)
@@ -491,7 +512,7 @@ function renderFilters() {
             )
             .join("")}
         </select>
-      </label>
+      </div>
       <label>
         <span>Status</span>
         <select data-filter="status">
@@ -535,6 +556,7 @@ function renderChangeDetail(change) {
       <div class="detail-title">
         <div class="detail-badges">
           <span class="${severityClass(enriched.severity)}">${severityLabels[enriched.severity]}</span>
+          ${renderSeverityHelp()}
           <span class="protocol-stamp">No ${escapeHtml(enriched.protocol)}</span>
         </div>
         <h2>${escapeHtml(enriched.title)}</h2>
