@@ -152,9 +152,7 @@ function enrichedChange(change) {
     publicationDate: baseDate,
     homologationDate: change.homologationDate ?? addDays(baseDate, 20),
     productionDate: change.productionDate ?? addDays(baseDate, 42),
-    effectiveDate:
-      change.effectiveDate ??
-      (change.severity === "LOW" ? addDays(baseDate, 90) : addDays(baseDate, 60)),
+    effectiveDate: change.effectiveDate ?? "",
     evidenceUrl: change.evidenceUrl ?? "",
     area:
       change.area ??
@@ -350,7 +348,7 @@ function renderDashboard() {
   }));
   const maxSeverity = Math.max(...bySeverity.map((item) => item.total), 1);
   const timelineChanges = enriched
-    .filter((change) => dayDistance(change.effectiveDate) !== null)
+    .filter((change) => change.status !== "IGNORED" && dayDistance(change.effectiveDate) !== null)
     .sort((a, b) => dayDistance(a.effectiveDate) - dayDistance(b.effectiveDate));
 
   return `
@@ -359,7 +357,7 @@ function renderDashboard() {
         <div class="panel-heading">
           <div>
             <p class="eyebrow">Timeline fiscal</p>
-            <h2>Regua de vigencia</h2>
+            <h2>Regua de vigencias oficiais</h2>
           </div>
           <button class="button button-primary" type="button" data-action="simulate-check">
             Executar verificacao
@@ -441,7 +439,7 @@ function renderVigenciaRuler(changes) {
       <div class="ruler-controls">
         <div class="ruler-window-copy">
           <strong>${windowStartDate} a ${windowEndDate}</strong>
-          <span>${positioned.length} mudancas nesta janela</span>
+          <span>${positioned.length} vigencias oficiais nesta janela</span>
         </div>
         <div class="ruler-nav" aria-label="Navegar na regua de vigencia">
           <button type="button" data-action="ruler-prev" title="Voltar 30 dias" aria-label="Voltar 30 dias">‹</button>
@@ -486,7 +484,7 @@ function renderVigenciaRuler(changes) {
         ${
           positioned.length
             ? ""
-            : `<div class="ruler-empty">Sem mudancas com prazo nesta janela.</div>`
+            : `<div class="ruler-empty">Sem vigencias oficiais nesta janela.</div>`
         }
       </div>
       <div class="ruler-legend">
@@ -512,7 +510,7 @@ function renderVigenciaRuler(changes) {
                   `,
                 )
                 .join("")
-            : `<div class="ruler-window-empty">Use as setas para navegar ate uma janela com mudancas.</div>`
+            : `<div class="ruler-window-empty">Use as setas para navegar ate uma janela com vigencias oficiais.</div>`
         }
       </div>
     </div>
