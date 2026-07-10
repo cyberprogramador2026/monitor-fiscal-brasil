@@ -77,6 +77,17 @@ const nationalSources = [
     checked: "2026-07-07T16:08:00-03:00",
   }),
   source({
+    id: "nfe-esquemas-xml",
+    name: "NF-e - Esquemas XML",
+    agency: "Portal Nacional NF-e",
+    category: "NACIONAL",
+    documents: ["NF-e", "DF-e", "Distribuicao DF-e", "XML"],
+    url: "https://www.nfe.fazenda.gov.br/portal/listaConteudo.aspx?tipoConteudo=BMPFMBoln3w%3D",
+    frequency: "HOURLY",
+    severity: "CRITICAL",
+    checked: "2026-07-10T09:20:00-03:00",
+  }),
+  source({
     id: "cte-portal",
     name: "CT-e - Portal Nacional",
     agency: "Portal Nacional CT-e",
@@ -269,6 +280,37 @@ export const sourceSeed = [...nationalSources, ...stateSources];
 
 export const changeSeed = [
   {
+    id: "chg-dfe-distribuicao-104",
+    sourceId: "nfe-esquemas-xml",
+    title: "Distribuicao de DF-e v.1.04 publicada",
+    protocol: "2026/0104",
+    detectedAt: "2026-07-10T09:20:00-03:00",
+    publicationDate: "2026-07-03",
+    homologationDate: "2026-07-03",
+    productionDate: "2026-07-03",
+    effectiveDate: "2026-07-03",
+    area: "Desenvolvimento",
+    evidence: "esquemas_xml_distribuicao_dfe_v104.zip",
+    severity: "CRITICAL",
+    status: "IN_REVIEW",
+    theme: "Distribuicao DF-e",
+    uf: null,
+    documents: ["DF-e", "Distribuicao DF-e", "NF-e", "XML"],
+    confidence: 94,
+    summary:
+      "O Portal Nacional NF-e publicou o pacote de liberacao Distribuicao de DF-e v.1.04 em Esquemas XML.",
+    impact:
+      "Pode afetar integracoes que consomem o Web Service NFeDistribuicaoDFe, armazenamento de NSU, schemas XML e validacoes de download/manifestacao.",
+    action:
+      "Baixar o ZIP oficial, comparar schemas da v.1.04 com a v.1.03 e validar impactos em ambientes que consultam distribuicao de documentos fiscais eletronicos.",
+    changedExcerpt:
+      "Esquemas XML NF-e - Pacote de Liberacao Distribuicao de DF-e v.1.04. Publicado em 03/07/2026 (ZIP).",
+    diffBefore:
+      "Versoes anteriores listavam Distribuicao de DF-e v.1.03 como pacote anterior em desuso.",
+    diffAfter:
+      "Versoes oficiais em uso passam a listar Distribuicao de DF-e v.1.04 publicada em 03/07/2026.",
+  },
+  {
     id: "chg-nfe-nt-2026",
     sourceId: "nfe-notas-tecnicas",
     title: "Nota tecnica NF-e em validacao",
@@ -412,6 +454,16 @@ export const changeSeed = [
 ];
 
 export const calendarSeed = [
+  {
+    id: "cal-dfe-distribuicao-104",
+    title: "Validar Distribuicao DF-e v.1.04",
+    date: "2026-07-10",
+    severity: "CRITICAL",
+    status: "IN_PROGRESS",
+    uf: null,
+    documents: ["DF-e", "Distribuicao DF-e", "XML"],
+    sourceId: "nfe-esquemas-xml",
+  },
   {
     id: "cal-reforma-2026",
     title: "Revisao orientacoes RTC 2026",

@@ -34,18 +34,29 @@ const state = {
 };
 
 const store = {
-  changes: loadCollection(storageKeys.changes, changeSeed),
-  sources: loadCollection(storageKeys.sources, sourceSeed),
-  calendar: loadCollection(storageKeys.calendar, calendarSeed),
+  changes: loadSeededCollection(storageKeys.changes, changeSeed),
+  sources: loadSeededCollection(storageKeys.sources, sourceSeed),
+  calendar: loadSeededCollection(storageKeys.calendar, calendarSeed),
 };
 
 const app = document.querySelector("#app");
 const toast = document.querySelector("#toast");
 
-function loadCollection(key, fallback) {
+function loadSeededCollection(key, fallback) {
   try {
     const saved = localStorage.getItem(key);
-    return saved ? JSON.parse(saved) : structuredClone(fallback);
+    if (!saved) return structuredClone(fallback);
+
+    const savedItems = JSON.parse(saved);
+    if (!Array.isArray(savedItems)) return structuredClone(fallback);
+
+    const savedIds = new Set(savedItems.map((item) => item.id));
+    const newSeedItems = fallback.filter((item) => !savedIds.has(item.id));
+    if (!newSeedItems.length) return savedItems;
+
+    const merged = [...structuredClone(newSeedItems), ...savedItems];
+    saveCollection(key, merged);
+    return merged;
   } catch {
     return structuredClone(fallback);
   }
@@ -106,7 +117,9 @@ function enrichedChange(change) {
       (change.severity === "LOW" ? addDays(baseDate, 90) : addDays(baseDate, 60)),
     area:
       change.area ??
-      (change.documents.some((doc) => ["NF-e", "NFC-e", "MDF-e", "CT-e"].includes(doc))
+      (change.documents.some((doc) =>
+        ["NF-e", "NFC-e", "MDF-e", "CT-e", "DF-e", "Distribuicao DF-e"].includes(doc),
+      )
         ? "Desenvolvimento"
         : "Fiscal"),
     evidence: change.evidence ?? "",
