@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Monitor Fiscal Brasil</title>
+    <meta
+      name="description"
+      content="Avisos de mudancas fiscais, calendario e fontes oficiais monitoradas."
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand-block">
+          <span class="brand-mark" aria-hidden="true">MF</span>
+          <div>
+            <p class="eyebrow">Soften Sistemas</p>
+            <h1>Monitor Fiscal Brasil</h1>
+          </div>
+        </div>
+
+        <nav class="tabs" aria-label="Navegacao principal">
+          <button class="tab is-active" type="button" data-view="dashboard">
+            Dashboard
+          </button>
+          <button class="tab" type="button" data-view="avisos">Avisos</button>
+          <button class="tab" type="button" data-view="calendario">
+            Calendario
+          </button>
+          <button class="tab" type="button" data-view="fontes">Fontes</button>
+          <button class="tab" type="button" data-view="revisao">Revisao</button>
+        </nav>
+      </header>
+
+      <section class="status-strip" aria-label="Indicadores principais">
+        <div>
+          <span class="metric-label">Fontes ativas</span>
+          <strong id="metric-active">0</strong>
+        </div>
+        <div>
+          <span class="metric-label">Mudancas abertas</span>
+          <strong id="metric-open">0</strong>
+        </div>
+        <div>
+          <span class="metric-label">Alta ou critica</span>
+          <strong id="metric-critical">0</strong>
+        </div>
+        <div>
+          <span class="metric-label">Proximo job</span>
+          <strong id="metric-next-job">--:--</strong>
+        </div>
+      </section>
+
+      <main id="app" tabindex="-1"></main>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
