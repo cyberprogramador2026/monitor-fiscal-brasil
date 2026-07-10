@@ -50,11 +50,19 @@ function loadSeededCollection(key, fallback) {
 
     const savedItems = JSON.parse(saved);
     if (!Array.isArray(savedItems)) return structuredClone(fallback);
+    if (key === storageKeys.calendar) {
+      saveCollection(key, structuredClone(fallback));
+      return structuredClone(fallback);
+    }
 
     const seedsById = new Map(fallback.map((item) => [item.id, item]));
     const savedWithSeedUpdates = savedItems.map((item) => {
       const seed = seedsById.get(item.id);
-      return seed ? { ...structuredClone(seed), ...item } : item;
+      if (!seed) return item;
+      if (key === storageKeys.changes) {
+        return { ...item, ...structuredClone(seed), status: item.status ?? seed.status };
+      }
+      return { ...item, ...structuredClone(seed), active: item.active ?? seed.active };
     });
 
     const savedIds = new Set(savedWithSeedUpdates.map((item) => item.id));
@@ -810,7 +818,7 @@ function renderCalendario() {
                   ${cell.events
                     .map(
                       (event) => `
-                        <button class="calendar-event ${event.severity.toLowerCase()}" type="button" data-action="open-source" data-id="${event.sourceId}">
+                        <button class="calendar-event ${event.severity.toLowerCase()}" type="button" data-action="select-change" data-id="${event.changeId}">
                           ${escapeHtml(event.title)}
                         </button>
                       `,
@@ -827,19 +835,20 @@ function renderCalendario() {
 }
 
 function enrichedCalendarEvents() {
-  const fromChanges = store.changes
-    .filter((change) => ["PUBLISHED", "IN_REVIEW"].includes(change.status))
+  return store.changes
+    .map(enrichedChange)
+    .filter((change) => change.status !== "IGNORED" && change.effectiveDate)
     .map((change) => ({
-      id: `event-${change.id}`,
+      id: `cal-${change.id}`,
       title: change.title,
-      date: change.detectedAt.slice(0, 10),
+      date: change.effectiveDate,
       severity: change.severity,
       status: change.status,
       uf: change.uf,
       documents: change.documents,
       sourceId: change.sourceId,
+      changeId: change.id,
     }));
-  return [...store.calendar, ...fromChanges];
 }
 
 function buildCalendarCells(month, events) {
@@ -1059,19 +1068,6 @@ function updateChangeStatus(id, status) {
   if (!change) return;
   change.status = status;
   saveCollection(storageKeys.changes, store.changes);
-  if (status === "PUBLISHED") {
-    store.calendar.push({
-      id: `cal-${id}`,
-      title: change.title,
-      date: change.detectedAt.slice(0, 10),
-      severity: change.severity,
-      status: "VALIDATED",
-      uf: change.uf,
-      documents: change.documents,
-      sourceId: change.sourceId,
-    });
-    saveCollection(storageKeys.calendar, store.calendar);
-  }
   showToast(status === "PUBLISHED" ? "Aviso publicado." : "Mudanca ignorada com historico.");
   render();
 }

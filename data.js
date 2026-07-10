@@ -1073,7 +1073,7 @@ export const changeSeed = [
   },
 ];
 
-export const calendarSeed = [
+const legacyCalendarSeed = [
   {
     id: "cal-nfse-danfse-api",
     title: "Corte API antiga DANFSe",
@@ -1245,3 +1245,17 @@ export const calendarSeed = [
     sourceId: "nfse-documentacao",
   },
 ];
+
+export const calendarSeed = changeSeed
+  .filter((change) => change.status !== "IGNORED" && change.effectiveDate)
+  .map((change) => ({
+    id: `cal-${change.id}`,
+    title: `Vigencia: ${change.title}`,
+    date: change.effectiveDate,
+    severity: change.severity,
+    status: change.effectiveDate < "2026-07-10" ? "IN_PROGRESS" : "PLANNED",
+    uf: change.uf,
+    documents: change.documents,
+    sourceId: change.sourceId,
+    changeId: change.id,
+  }));
