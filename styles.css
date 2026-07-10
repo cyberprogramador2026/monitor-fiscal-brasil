@@ -634,6 +634,31 @@ select {
   overflow-wrap: anywhere;
 }
 
+.evidence-line-download a {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+  color: var(--teal);
+  text-align: right;
+  text-decoration: none;
+}
+
+.evidence-line-download a:hover {
+  text-decoration: underline;
+}
+
+.evidence-line-download a span {
+  color: var(--teal);
+  font-weight: 900;
+}
+
+.evidence-line-download small {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
 .change-excerpt {
   padding: 14px;
   border: 1px solid #bdd5ca;

@@ -291,6 +291,8 @@ export const changeSeed = [
     effectiveDate: "2026-07-03",
     area: "Desenvolvimento",
     evidence: "esquemas_xml_distribuicao_dfe_v104.zip",
+    evidenceUrl:
+      "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=IzuP2y0G6hk%3D",
     severity: "CRITICAL",
     status: "IN_REVIEW",
     theme: "Distribuicao DF-e",

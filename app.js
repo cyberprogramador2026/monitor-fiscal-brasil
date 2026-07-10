@@ -115,6 +115,7 @@ function enrichedChange(change) {
     effectiveDate:
       change.effectiveDate ??
       (change.severity === "LOW" ? addDays(baseDate, 90) : addDays(baseDate, 60)),
+    evidenceUrl: change.evidenceUrl ?? "",
     area:
       change.area ??
       (change.documents.some((doc) =>
@@ -175,6 +176,32 @@ function renderSeverityHelp(extraClass = "") {
 
 function statusClass(status) {
   return `status status-${status.toLowerCase().replace("_", "-")}`;
+}
+
+function isDownloadEvidence(value) {
+  return /\.(zip|pdf|xlsx?|csv|xml|xsd|json|txt|docx?)$/i.test(String(value).split("?")[0]);
+}
+
+function renderEvidence(change) {
+  if (!change.evidence) return "";
+
+  const evidence = escapeHtml(change.evidence);
+  const directUrl = change.evidenceUrl || (/^https?:\/\//i.test(change.evidence) ? change.evidence : "");
+  const shouldLink = directUrl && isDownloadEvidence(change.evidence);
+
+  if (!shouldLink) {
+    return `<div class="evidence-line"><strong>Evidencia</strong><span>${evidence}</span></div>`;
+  }
+
+  return `
+    <div class="evidence-line evidence-line-download">
+      <strong>Evidencia</strong>
+      <a href="${escapeHtml(directUrl)}" target="_blank" rel="noreferrer">
+        <span>${evidence}</span>
+        <small>Baixar arquivo oficial</small>
+      </a>
+    </div>
+  `;
 }
 
 function sourceFor(change) {
@@ -617,11 +644,7 @@ function renderChangeDetail(change) {
         </div>
       </div>
 
-      ${
-        enriched.evidence
-          ? `<div class="evidence-line"><strong>Evidencia</strong><span>${escapeHtml(enriched.evidence)}</span></div>`
-          : ""
-      }
+      ${renderEvidence(enriched)}
 
       <div class="button-row">
         <a class="button" href="${escapeHtml(source.url)}" target="_blank" rel="noreferrer">Abrir fonte</a>
