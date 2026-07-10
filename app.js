@@ -822,16 +822,28 @@ function renderCalendario() {
                   ${cell.events
                     .map(
                       (event) => `
-                        <button
-                          class="calendar-event ${event.severity.toLowerCase()}"
-                          type="button"
-                          data-action="select-change"
-                          data-id="${event.changeId}"
-                          aria-label="${escapeHtml(event.ariaLabel)}"
-                        >
-                          <span class="calendar-event-title">${escapeHtml(event.displayTitle)}</span>
+                        <div class="calendar-event ${event.severity.toLowerCase()}">
+                          <button
+                            class="calendar-event-main"
+                            type="button"
+                            data-action="select-change"
+                            data-id="${event.changeId}"
+                            aria-label="${escapeHtml(event.ariaLabel)}"
+                          >
+                            <span class="calendar-event-title">${escapeHtml(event.displayTitle)}</span>
+                          </button>
+                          <button
+                            class="calendar-event-ignore"
+                            type="button"
+                            data-action="ignore-calendar-event"
+                            data-id="${event.changeId}"
+                            title="Ignorar e remover do calendario"
+                            aria-label="Ignorar e remover ${escapeHtml(event.displayTitle)} do calendario"
+                          >
+                            Ignorar
+                          </button>
                           ${renderCalendarTooltip(event)}
-                        </button>
+                        </div>
                       `,
                     )
                     .join("")}
@@ -896,7 +908,7 @@ function renderCalendarTooltip(event) {
       <span><b>Antes:</b> ${escapeHtml(event.diffBefore)}</span>
       <span><b>Depois:</b> ${escapeHtml(event.diffAfter)}</span>
       <span><b>Evidencia:</b> ${escapeHtml(event.evidence)}</span>
-      <em>Clique para abrir o aviso completo.</em>
+      <em>Clique no titulo para abrir. Use Ignorar para remover do calendario.</em>
     </span>
   `;
 }
@@ -1075,6 +1087,7 @@ function handleAction(action, id) {
     },
     publish: () => updateChangeStatus(id, "PUBLISHED"),
     ignore: () => updateChangeStatus(id, "IGNORED"),
+    "ignore-calendar-event": () => ignoreCalendarEvent(id),
     "export-csv": exportCsv,
     "simulate-check": () => simulateCheck(),
     "check-source": () => simulateCheck(id),
@@ -1119,6 +1132,15 @@ function updateChangeStatus(id, status) {
   change.status = status;
   saveCollection(storageKeys.changes, store.changes);
   showToast(status === "PUBLISHED" ? "Aviso publicado." : "Mudanca ignorada com historico.");
+  render();
+}
+
+function ignoreCalendarEvent(id) {
+  const change = byId(store.changes, id);
+  if (!change) return;
+  change.status = "IGNORED";
+  saveCollection(storageKeys.changes, store.changes);
+  showToast("Aviso ignorado e removido do calendario.");
   render();
 }
 

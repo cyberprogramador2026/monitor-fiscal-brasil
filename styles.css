@@ -1150,6 +1150,8 @@ select {
 
 .calendar-event {
   position: relative;
+  display: grid;
+  gap: 5px;
   width: 100%;
   min-height: 28px;
   padding: 5px 7px;
@@ -1160,6 +1162,38 @@ select {
   font-weight: 800;
   line-height: 1.25;
   text-align: left;
+}
+
+.calendar-event-main,
+.calendar-event-ignore {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.calendar-event-main {
+  padding: 0;
+  font-weight: 900;
+}
+
+.calendar-event-ignore {
+  width: fit-content;
+  min-height: 22px;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.58);
+  color: #5f5145;
+  font-size: 0.66rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.calendar-event-ignore:hover,
+.calendar-event-ignore:focus-visible {
+  background: #ffffff;
+  color: var(--red);
+  outline: 1px solid rgba(179, 38, 30, 0.35);
 }
 
 .calendar-event-title {
@@ -1192,14 +1226,17 @@ select {
 }
 
 .calendar-event:hover,
-.calendar-event:focus-visible {
+.calendar-event:focus-within {
   z-index: 70;
+}
+
+.calendar-event-main:focus-visible {
   outline: 2px solid rgba(20, 112, 122, 0.34);
   outline-offset: 2px;
 }
 
 .calendar-event:hover .calendar-tooltip,
-.calendar-event:focus-visible .calendar-tooltip {
+.calendar-event:focus-within .calendar-tooltip {
   display: grid;
 }
 
