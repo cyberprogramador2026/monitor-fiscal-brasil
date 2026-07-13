@@ -612,51 +612,127 @@ select {
   color: var(--muted);
 }
 
-.evidence-line {
+.evidence-card {
+  border: 1px solid #bdd5ca;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.evidence-card summary {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
+  min-height: 58px;
   padding: 12px 14px;
-  border: 1px dashed #aab0b8;
+  cursor: pointer;
+  list-style: none;
+}
+
+.evidence-card summary::-webkit-details-marker {
+  display: none;
+}
+
+.evidence-card summary span {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.evidence-card summary strong {
+  color: var(--ink);
+  font-size: 0.84rem;
+  text-transform: uppercase;
+}
+
+.evidence-card summary small {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.evidence-card summary em {
+  flex: 0 0 auto;
+  color: var(--teal);
+  font-size: 0.78rem;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.evidence-card[open] summary {
+  border-bottom: 1px solid var(--line);
+  background: #f4faf8;
+}
+
+.evidence-body {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.evidence-focus {
+  padding: 12px;
+  border-left: 4px solid var(--teal);
+  background: #f4faf8;
+}
+
+.evidence-focus h3,
+.evidence-compare h3 {
+  margin: 0 0 6px;
+  font-size: 0.88rem;
+}
+
+.evidence-focus p,
+.evidence-compare p {
+  margin: 0;
+  color: #33443d;
+}
+
+.evidence-compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.evidence-compare section {
+  min-height: 104px;
+  padding: 12px;
+  border: 1px solid var(--line);
   border-radius: 8px;
   background: #fbfbf8;
 }
 
-.evidence-line strong {
-  font-size: 0.78rem;
-  text-transform: uppercase;
-}
-
-.evidence-line span {
-  color: var(--muted);
-  font-family: "JetBrains Mono", "Courier New", monospace;
-  font-size: 0.78rem;
-  overflow-wrap: anywhere;
-}
-
-.evidence-line-download a {
+.evidence-meta {
   display: grid;
-  justify-items: end;
-  gap: 2px;
-  color: var(--teal);
-  text-align: right;
-  text-decoration: none;
+  grid-template-columns: 1fr 1.4fr repeat(2, minmax(120px, 0.6fr));
+  gap: 8px;
+  margin: 0;
 }
 
-.evidence-line-download a:hover {
-  text-decoration: underline;
+.evidence-meta div {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
 }
 
-.evidence-line-download a span {
-  color: var(--teal);
-  font-weight: 900;
-}
-
-.evidence-line-download small {
+.evidence-meta dt {
   color: var(--muted);
   font-size: 0.72rem;
   font-weight: 900;
   text-transform: uppercase;
+}
+
+.evidence-meta dd {
+  margin: 4px 0 0;
+  color: var(--ink);
+  font-size: 0.84rem;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.evidence-actions {
+  justify-content: flex-start;
 }
 
 .change-excerpt {
@@ -1334,6 +1410,60 @@ td span {
   color: var(--muted);
 }
 
+.supervisor-shell {
+  display: grid;
+  place-items: start center;
+  min-height: 420px;
+}
+
+.supervisor-card {
+  display: grid;
+  gap: 18px;
+  width: min(100%, 520px);
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: var(--shadow);
+}
+
+.supervisor-card.is-modal {
+  width: min(calc(100vw - 32px), 500px);
+}
+
+.supervisor-card h2 {
+  margin: 4px 0 8px;
+}
+
+.supervisor-card p {
+  margin-bottom: 0;
+  color: var(--muted);
+}
+
+.supervisor-form {
+  display: grid;
+  gap: 12px;
+}
+
+.supervisor-error {
+  padding: 10px 12px;
+  border: 1px solid #efb7b1;
+  border-radius: 8px;
+  background: #fff0ef;
+  color: var(--red) !important;
+  font-weight: 800;
+}
+
+.supervisor-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(20, 27, 24, 0.48);
+}
+
 .rule-list {
   display: grid;
   gap: 12px;
@@ -1423,10 +1553,17 @@ td span {
   .compact-list,
   .definition-grid,
   .diff-grid,
+  .evidence-compare,
+  .evidence-meta,
   .milestone-grid,
   .filters,
   .compact-filter {
     grid-template-columns: 1fr;
+  }
+
+  .evidence-card summary {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .panel-heading,

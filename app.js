@@ -11,6 +11,12 @@ const storageKeys = {
   changes: "monitor-fiscal:changes",
   sources: "monitor-fiscal:sources",
   calendar: "monitor-fiscal:calendar",
+  supervisorSession: "monitor-fiscal:supervisor-session",
+};
+
+const supervisorCredentials = {
+  username: "Soften",
+  passwordHash: "e85a31bedd35c3a1162bad718909995f1e5befcb0b76251008562c52ef15ff63",
 };
 
 const severityOrder = {
@@ -32,6 +38,9 @@ const state = {
   selectedChangeId: "chg-nfe-nt-2026",
   rulerStartDay: -30,
   calendarMonth: new Date("2026-07-01T00:00:00-03:00"),
+  supervisorAuthenticated: sessionStorage.getItem(storageKeys.supervisorSession) === "active",
+  supervisorGate: null,
+  supervisorError: "",
 };
 
 const store = {
@@ -199,6 +208,73 @@ function compactText(value, limit = 150) {
   return `${text.slice(0, limit - 3).trim()}...`;
 }
 
+async function sha256Hex(value) {
+  const encoded = new TextEncoder().encode(value);
+  const digest = await crypto.subtle.digest("SHA-256", encoded);
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+async function validateSupervisorCredentials(username, password) {
+  const cleanUsername = String(username ?? "").trim();
+  if (cleanUsername !== supervisorCredentials.username) return false;
+  const passwordHash = await sha256Hex(`${cleanUsername}:${password}`);
+  return passwordHash === supervisorCredentials.passwordHash;
+}
+
+function supervisorActionLabel(gate = state.supervisorGate) {
+  if (!gate) return "acessar a fila de revisao";
+  if (gate.type === "status" && gate.status === "PUBLISHED") return "publicar este aviso";
+  if (gate.type === "status" && gate.status === "IGNORED") return "ignorar este aviso";
+  if (gate.type === "calendar-ignore") return "remover este item do calendario";
+  return "concluir a revisao";
+}
+
+function renderSupervisorLoginCard(mode = "page") {
+  return `
+    <section class="supervisor-card ${mode === "modal" ? "is-modal" : ""}">
+      <div>
+        <p class="eyebrow">Acesso de supervisor</p>
+        <h2>Login necessario para revisar</h2>
+        <p>Informe usuario e senha de supervisor para ${escapeHtml(supervisorActionLabel())}.</p>
+      </div>
+      <form class="supervisor-form" data-supervisor-form>
+        <label>
+          <span>Usuario</span>
+          <input name="supervisorUser" type="text" autocomplete="username" required />
+        </label>
+        <label>
+          <span>Senha</span>
+          <input name="supervisorPassword" type="password" autocomplete="current-password" required />
+        </label>
+        ${
+          state.supervisorError
+            ? `<p class="supervisor-error" role="alert">${escapeHtml(state.supervisorError)}</p>`
+            : ""
+        }
+        <div class="button-row">
+          <button class="button button-primary" type="submit">Entrar e revisar</button>
+          ${
+            mode === "modal"
+              ? `<button class="button button-muted" type="button" data-action="cancel-supervisor-gate">Cancelar</button>`
+              : ""
+          }
+        </div>
+      </form>
+    </section>
+  `;
+}
+
+function renderSupervisorGate() {
+  if (!state.supervisorGate) return "";
+  return `
+    <div class="supervisor-overlay" role="dialog" aria-modal="true" aria-label="Login de supervisor">
+      ${renderSupervisorLoginCard("modal")}
+    </div>
+  `;
+}
+
 function severityClass(severity) {
   return `severity severity-${severity.toLowerCase()}`;
 }
@@ -226,25 +302,68 @@ function isDownloadEvidence(value) {
   return /\.(zip|pdf|xlsx?|csv|xml|xsd|json|txt|docx?)$/i.test(String(value).split("?")[0]);
 }
 
-function renderEvidence(change) {
-  if (!change.evidence) return "";
-
-  const evidence = escapeHtml(change.evidence);
-  const directUrl = change.evidenceUrl || (/^https?:\/\//i.test(change.evidence) ? change.evidence : "");
-  const shouldLink = directUrl && isDownloadEvidence(change.evidence);
-
-  if (!shouldLink) {
-    return `<div class="evidence-line"><strong>Evidencia</strong><span>${evidence}</span></div>`;
-  }
+function renderEvidence(change, source) {
+  const evidenceText =
+    change.evidence || "Sem arquivo especifico; a evidencia principal esta no trecho oficial monitorado.";
+  const directUrl =
+    change.evidenceUrl || (/^https?:\/\//i.test(change.evidence) ? change.evidence : "");
+  const shouldDownload = directUrl && isDownloadEvidence(directUrl || change.evidence);
+  const evidenceLabel = shouldDownload ? "Arquivo oficial" : "Registro da evidencia";
 
   return `
-    <div class="evidence-line evidence-line-download">
-      <strong>Evidencia</strong>
-      <a href="${escapeHtml(directUrl)}" target="_blank" rel="noreferrer">
-        <span>${evidence}</span>
-        <small>Baixar arquivo oficial</small>
-      </a>
-    </div>
+    <details class="evidence-card">
+      <summary>
+        <span>
+          <strong>Evidencia da mudanca</strong>
+          <small>${escapeHtml(compactText(evidenceText, 96))}</small>
+        </span>
+        <em>Clique para ver detalhes</em>
+      </summary>
+      <div class="evidence-body">
+        <section class="evidence-focus">
+          <h3>O que mudou</h3>
+          <p>${escapeHtml(change.changedExcerpt)}</p>
+        </section>
+        <div class="evidence-compare">
+          <section>
+            <h3>Antes</h3>
+            <p>${escapeHtml(change.diffBefore)}</p>
+          </section>
+          <section>
+            <h3>Depois</h3>
+            <p>${escapeHtml(change.diffAfter)}</p>
+          </section>
+        </div>
+        <dl class="evidence-meta">
+          <div>
+            <dt>Fonte</dt>
+            <dd>${escapeHtml(source.name)}</dd>
+          </div>
+          <div>
+            <dt>${evidenceLabel}</dt>
+            <dd>${escapeHtml(evidenceText)}</dd>
+          </div>
+          <div>
+            <dt>Publicacao</dt>
+            <dd>${formatDate(change.publicationDate)}</dd>
+          </div>
+          <div>
+            <dt>Obrigatoriedade</dt>
+            <dd>${formatDate(change.effectiveDate)}</dd>
+          </div>
+        </dl>
+        <div class="button-row evidence-actions">
+          <a class="button" href="${escapeHtml(source.url)}" target="_blank" rel="noreferrer">Abrir fonte oficial</a>
+          ${
+            directUrl
+              ? `<a class="button button-muted" href="${escapeHtml(directUrl)}" target="_blank" rel="noreferrer">${
+                  shouldDownload ? "Baixar evidencia" : "Abrir evidencia"
+                }</a>`
+              : ""
+          }
+        </div>
+      </div>
+    </details>
   `;
 }
 
@@ -333,7 +452,7 @@ function render() {
     fontes: renderFontes,
     revisao: renderRevisao,
   };
-  app.innerHTML = views[state.view]();
+  app.innerHTML = `${views[state.view]()}${renderSupervisorGate()}`;
   bindDynamicActions();
 }
 
@@ -723,6 +842,8 @@ function renderChangeDetail(change) {
         </a>
       </section>
 
+      ${renderEvidence(enriched, source)}
+
       <section class="text-block">
         <h3>Resumo IA</h3>
         <p>${escapeHtml(enriched.summary)}</p>
@@ -746,8 +867,6 @@ function renderChangeDetail(change) {
           <p>${escapeHtml(enriched.diffAfter)}</p>
         </div>
       </div>
-
-      ${renderEvidence(enriched)}
 
       <div class="button-row">
         <a class="button" href="${escapeHtml(source.url)}" target="_blank" rel="noreferrer">Abrir fonte</a>
@@ -1005,6 +1124,14 @@ function renderSourceRow(source) {
 }
 
 function renderRevisao() {
+  if (!state.supervisorAuthenticated) {
+    return `
+      <section class="supervisor-shell">
+        ${renderSupervisorLoginCard()}
+      </section>
+    `;
+  }
+
   const pending = store.changes
     .filter((change) => ["DRAFT", "IN_REVIEW"].includes(change.status))
     .sort((a, b) => severityOrder[b.severity] - severityOrder[a.severity]);
@@ -1016,6 +1143,7 @@ function renderRevisao() {
             <p class="eyebrow">${pending.length} pendentes</p>
             <h2>Fila de revisao</h2>
           </div>
+          <button class="button button-muted" type="button" data-action="supervisor-logout">Sair do supervisor</button>
         </div>
         <div class="review-list">
           ${
@@ -1075,6 +1203,13 @@ function bindDynamicActions() {
   document.querySelectorAll("[data-action]").forEach((element) => {
     element.addEventListener("click", () => handleAction(element.dataset.action, element.dataset.id));
   });
+
+  document.querySelectorAll("[data-supervisor-form]").forEach((form) => {
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      handleSupervisorLogin(form);
+    });
+  });
 }
 
 function handleAction(action, id) {
@@ -1085,9 +1220,9 @@ function handleAction(action, id) {
       setActiveTab();
       render();
     },
-    publish: () => updateChangeStatus(id, "PUBLISHED"),
-    ignore: () => updateChangeStatus(id, "IGNORED"),
-    "ignore-calendar-event": () => ignoreCalendarEvent(id),
+    publish: () => requestSupervisorAction({ type: "status", id, status: "PUBLISHED" }),
+    ignore: () => requestSupervisorAction({ type: "status", id, status: "IGNORED" }),
+    "ignore-calendar-event": () => requestSupervisorAction({ type: "calendar-ignore", id }),
     "export-csv": exportCsv,
     "simulate-check": () => simulateCheck(),
     "check-source": () => simulateCheck(id),
@@ -1115,9 +1250,74 @@ function handleAction(action, id) {
       state.calendarMonth.setMonth(state.calendarMonth.getMonth() + 1);
       render();
     },
+    "cancel-supervisor-gate": () => {
+      state.supervisorGate = null;
+      state.supervisorError = "";
+      render();
+    },
+    "supervisor-logout": () => {
+      sessionStorage.removeItem(storageKeys.supervisorSession);
+      state.supervisorAuthenticated = false;
+      state.supervisorGate = null;
+      showToast("Sessao de supervisor encerrada.");
+      render();
+    },
     "reset-demo": resetDemo,
   };
   handlers[action]?.();
+}
+
+async function handleSupervisorLogin(form) {
+  const data = new FormData(form);
+  const username = data.get("supervisorUser");
+  const password = data.get("supervisorPassword");
+  try {
+    const isValid = await validateSupervisorCredentials(username, password);
+    if (!isValid) {
+      state.supervisorError = "Usuario ou senha de supervisor invalidos.";
+      render();
+      return;
+    }
+
+    state.supervisorAuthenticated = true;
+    sessionStorage.setItem(storageKeys.supervisorSession, "active");
+    state.supervisorError = "";
+    const pendingAction = state.supervisorGate;
+    state.supervisorGate = null;
+    showToast("Supervisor autenticado.");
+
+    if (pendingAction) {
+      performSupervisorAction(pendingAction);
+      return;
+    }
+
+    render();
+  } catch {
+    state.supervisorError = "Nao foi possivel validar o login neste navegador.";
+    render();
+  }
+}
+
+function requestSupervisorAction(action) {
+  if (state.supervisorAuthenticated) {
+    performSupervisorAction(action);
+    return;
+  }
+
+  state.supervisorGate = action;
+  state.supervisorError = "";
+  render();
+}
+
+function performSupervisorAction(action) {
+  if (action.type === "status") {
+    updateChangeStatus(action.id, action.status);
+    return;
+  }
+
+  if (action.type === "calendar-ignore") {
+    ignoreCalendarEvent(action.id);
+  }
 }
 
 function setActiveTab() {
