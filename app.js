@@ -302,27 +302,126 @@ function isDownloadEvidence(value) {
   return /\.(zip|pdf|xlsx?|csv|xml|xsd|json|txt|docx?)$/i.test(String(value).split("?")[0]);
 }
 
+function isGenericEvidence(change) {
+  const evidence = String(change.evidence ?? "");
+  const excerpt = String(change.changedExcerpt ?? "");
+  return (
+    /captura_automatica|hash normalizado|snapshot automatico/i.test(evidence) ||
+    /hash normalizado mudou|conteudo oficial normalizado apresentou alteracao/i.test(excerpt)
+  );
+}
+
+function fileNameFromUrl(value) {
+  try {
+    const url = new URL(value);
+    const file = url.pathname.split("/").filter(Boolean).at(-1);
+    return file ? decodeURIComponent(file) : "";
+  } catch {
+    return String(value ?? "").split("?")[0].split("/").filter(Boolean).at(-1) ?? "";
+  }
+}
+
+function evidenceSearchTerms(change, source, directUrl) {
+  const rawTerms = [
+    change.protocol,
+    change.evidence,
+    directUrl ? fileNameFromUrl(directUrl) : "",
+    change.theme,
+    change.documents?.join(" "),
+    change.title.replace(/alteracao detectada/gi, ""),
+    change.changedExcerpt,
+    source.name,
+  ];
+
+  const seen = new Set();
+  return rawTerms
+    .map((term) =>
+      String(term ?? "")
+        .replace(/\.(pdf|zip|xlsx?|csv|xml|xsd|json|txt|docx?)$/i, "")
+        .replace(/[_-]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim(),
+    )
+    .filter((term) => term.length >= 4 && !/captura automatica fonte oficial/i.test(term))
+    .map((term) => compactText(term, 64))
+    .filter((term) => {
+      const key = term.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, 4);
+}
+
+function evidencePrecision(change, directUrl) {
+  if (isGenericEvidence(change)) {
+    return {
+      level: "low",
+      label: "Evidencia insuficiente",
+      description:
+        "A fonte mudou, mas o monitor ainda nao isolou um trecho oficial especifico. Revise manualmente antes de publicar.",
+    };
+  }
+
+  if (directUrl) {
+    return {
+      level: "high",
+      label: "Evidencia direta",
+      description: "Ha link direto para o arquivo ou registro oficial usado na analise.",
+    };
+  }
+
+  return {
+    level: "medium",
+    label: "Evidencia por trecho",
+    description: "A localizacao depende do trecho detectado e dos termos de busca abaixo.",
+  };
+}
+
 function renderEvidence(change, source) {
-  const evidenceText =
-    change.evidence || "Sem arquivo especifico; a evidencia principal esta no trecho oficial monitorado.";
+  const genericEvidence = isGenericEvidence(change);
+  const evidenceText = genericEvidence
+    ? "Alteracao detectada por comparacao automatica, sem arquivo oficial isolado."
+    : change.evidence || "Sem arquivo especifico; a evidencia principal esta no trecho oficial monitorado.";
   const directUrl =
-    change.evidenceUrl || (/^https?:\/\//i.test(change.evidence) ? change.evidence : "");
+    !genericEvidence && (change.evidenceUrl || (/^https?:\/\//i.test(change.evidence) ? change.evidence : ""));
   const shouldDownload = directUrl && isDownloadEvidence(directUrl || change.evidence);
-  const evidenceLabel = shouldDownload ? "Arquivo oficial" : "Registro da evidencia";
+  const evidenceLabel = directUrl ? (shouldDownload ? "Arquivo oficial" : "Registro oficial") : "Tipo de evidencia";
+  const precision = evidencePrecision(change, directUrl);
+  const searchTerms = evidenceSearchTerms(change, source, directUrl);
 
   return `
-    <details class="evidence-card">
+    <details class="evidence-card evidence-${precision.level}">
       <summary>
         <span>
           <strong>Evidencia da mudanca</strong>
-          <small>${escapeHtml(compactText(evidenceText, 96))}</small>
+          <small>${escapeHtml(precision.label)} - ${escapeHtml(compactText(evidenceText, 96))}</small>
         </span>
         <em>Clique para ver detalhes</em>
       </summary>
       <div class="evidence-body">
+        <section class="evidence-precision">
+          <strong>${escapeHtml(precision.label)}</strong>
+          <p>${escapeHtml(precision.description)}</p>
+        </section>
         <section class="evidence-focus">
           <h3>O que mudou</h3>
           <p>${escapeHtml(change.changedExcerpt)}</p>
+        </section>
+        <section class="evidence-locator">
+          <h3>Como localizar na fonte</h3>
+          <ol>
+            <li>${directUrl ? "Abra a evidencia direta abaixo." : "Abra a fonte oficial abaixo."}</li>
+            <li>Use a busca do navegador ou do PDF por um dos termos listados.</li>
+            <li>Compare o trecho encontrado com os blocos Antes e Depois.</li>
+          </ol>
+          <div class="evidence-terms">
+            ${
+              searchTerms.length
+                ? searchTerms.map((term) => `<code>${escapeHtml(term)}</code>`).join("")
+                : `<span>Nenhum termo confiavel foi isolado automaticamente.</span>`
+            }
+          </div>
         </section>
         <div class="evidence-compare">
           <section>
@@ -1362,7 +1461,7 @@ function simulateCheck(sourceId) {
     productionDate: addDays(now.toISOString().slice(0, 10), 42),
     effectiveDate: addDays(now.toISOString().slice(0, 10), source.severity === "CRITICAL" ? 30 : 60),
     area: ["CRITICAL", "HIGH"].includes(source.severity) ? "Desenvolvimento" : "Fiscal",
-    evidence: "captura_automatica_fonte_oficial.pdf",
+    evidence: "snapshot automatico da fonte oficial",
     severity: source.severity,
     status: ["CRITICAL", "HIGH"].includes(source.severity) ? "IN_REVIEW" : "DRAFT",
     theme: source.documents.includes("NF-e") ? "Validacao fiscal" : "Outro",
