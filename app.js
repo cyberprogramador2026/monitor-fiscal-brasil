@@ -36,6 +36,7 @@ const state = {
   severity: "ALL",
   status: "ALL",
   selectedChangeId: "chg-nfe-nt-2026",
+  detailDialogChangeId: null,
   rulerStartDay: -30,
   calendarMonth: new Date("2026-07-01T00:00:00-03:00"),
   supervisorAuthenticated: sessionStorage.getItem(storageKeys.supervisorSession) === "active",
@@ -535,10 +536,17 @@ function bindShell() {
   document.querySelectorAll("[data-view]").forEach((button) => {
     button.addEventListener("click", () => {
       state.view = button.dataset.view;
+      state.detailDialogChangeId = null;
       setActiveTab();
       render();
       app.focus();
     });
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape" || !state.detailDialogChangeId) return;
+    state.detailDialogChangeId = null;
+    render();
   });
 }
 
@@ -551,7 +559,7 @@ function render() {
     fontes: renderFontes,
     revisao: renderRevisao,
   };
-  app.innerHTML = `${views[state.view]()}${renderSupervisorGate()}`;
+  app.innerHTML = `${views[state.view]()}${renderChangeDialog()}${renderSupervisorGate()}`;
   bindDynamicActions();
 }
 
@@ -787,28 +795,55 @@ function renderSourceCoverage() {
 
 function renderAvisos() {
   const changes = filteredChanges();
-  const selected = byId(store.changes, state.selectedChangeId) ?? changes[0];
-  if (selected) state.selectedChangeId = selected.id;
 
   return `
     ${renderFilters()}
-    <section class="split-layout">
-      <div class="panel">
-        <div class="panel-heading">
-          <div>
-            <p class="eyebrow">${changes.length} registros</p>
-            <h2>Avisos fiscais</h2>
-          </div>
-          <button class="button" type="button" data-action="export-csv">Exportar CSV</button>
+    <section class="panel alerts-panel">
+      <div class="panel-heading">
+        <div>
+          <p class="eyebrow">${changes.length} registros</p>
+          <h2>Avisos fiscais</h2>
         </div>
-        <div class="alert-list">
-          ${changes.length ? changes.map(renderChangeCard).join("") : renderEmpty("Nenhum aviso encontrado.")}
-        </div>
+        <button class="button" type="button" data-action="export-csv">Exportar CSV</button>
       </div>
-      <aside class="panel detail-panel">
-        ${selected ? renderChangeDetail(selected) : renderEmpty("Selecione um aviso.")}
-      </aside>
+      <div class="alert-list">
+        ${changes.length ? changes.map(renderChangeCard).join("") : renderEmpty("Nenhum aviso encontrado.")}
+      </div>
     </section>
+  `;
+}
+
+function renderChangeDialog() {
+  if (state.view !== "avisos" || !state.detailDialogChangeId) return "";
+  const change = byId(store.changes, state.detailDialogChangeId);
+  if (!change) return "";
+
+  return `
+    <div class="change-dialog-overlay">
+      <button
+        class="change-dialog-backdrop"
+        type="button"
+        data-action="close-change-dialog"
+        aria-label="Fechar detalhes do aviso"
+      ></button>
+      <section
+        class="change-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="change-dialog-title"
+      >
+        <div class="change-dialog-bar">
+          <div>
+            <p class="eyebrow">Detalhe do aviso</p>
+            <h2 id="change-dialog-title">${escapeHtml(change.title)}</h2>
+          </div>
+          <button class="button icon-button" type="button" data-action="close-change-dialog" aria-label="Fechar detalhes">×</button>
+        </div>
+        <div class="change-dialog-scroll">
+          ${renderChangeDetail(change)}
+        </div>
+      </section>
+    </div>
   `;
 }
 
@@ -1316,7 +1351,12 @@ function handleAction(action, id) {
     "select-change": () => {
       state.selectedChangeId = id;
       state.view = "avisos";
+      state.detailDialogChangeId = id;
       setActiveTab();
+      render();
+    },
+    "close-change-dialog": () => {
+      state.detailDialogChangeId = null;
       render();
     },
     publish: () => requestSupervisorAction({ type: "status", id, status: "PUBLISHED" }),
