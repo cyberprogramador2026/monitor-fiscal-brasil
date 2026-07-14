@@ -5,7 +5,7 @@ import {
   severityLabels,
   sourceSeed,
   statusLabels,
-} from "./data.js?v=20260714-ops-calendar";
+} from "./data.js?v=20260714-title-fix";
 
 const storageKeys = {
   changes: "monitor-fiscal:changes",
@@ -583,12 +583,51 @@ function sourceFor(change) {
   };
 }
 
+function isGenericChangeTitle(value) {
+  return /(^|:\s*)altera[cç][aã]o detectada$/i.test(String(value ?? "").trim());
+}
+
+function readableList(values, limit = 3) {
+  const items = [...new Set(values.filter(Boolean))].slice(0, limit);
+  if (items.length <= 1) return items[0] ?? "documentos fiscais";
+  return `${items.slice(0, -1).join(", ")} e ${items.at(-1)}`;
+}
+
+function titleSubjectForDetectedChange(source, change = {}) {
+  const docs = change.documents?.length ? change.documents : source.documents ?? [];
+  const text = [source.name, source.category, change.theme, docs.join(" "), change.changedExcerpt, change.summary]
+    .filter(Boolean)
+    .join(" ");
+  const docLabel = readableList(docs);
+
+  if (isOperationalStop(change)) return `acompanhar indisponibilidade de ${docLabel}`;
+  if (/esquemas?\s+xml|schema|xsd|xml/i.test(text)) return `revisar schemas ${docLabel}`;
+  if (/nota[s ]+t[eé]cnica|(^|\s)nt(\s|$)/i.test(text)) return `revisar nota tecnica ${docLabel}`;
+  if (/cbenef/i.test(text)) return "conferir tabela cBenef";
+  if (/reforma tributaria|rtc|ibs|cbs|split payment/i.test(text)) return `validar impactos RTC em ${docLabel}`;
+  if (/cnpj.*alfanum|alfanum.*cnpj/i.test(text)) return "validar CNPJ alfanumerico";
+  if (/not[ií]cia|comunicado|portal|sefaz|receita/i.test(text)) return `revisar comunicado ${docLabel}`;
+  if (/sped|efd/i.test(text)) return `revisar obrigacao acessoria ${docLabel}`;
+
+  return `revisar ${docLabel}`;
+}
+
+function titleForDetectedChange(source, change = {}) {
+  return `${source.name}: ${titleSubjectForDetectedChange(source, change)}`;
+}
+
+function displayTitleForChange(change) {
+  const source = sourceFor(change);
+  return isGenericChangeTitle(change.title) ? titleForDetectedChange(source, change) : change.title;
+}
+
 function filteredChanges() {
   const query = state.query.trim().toLowerCase();
   return store.changes
     .filter((change) => {
       const source = sourceFor(change);
       const haystack = [
+        displayTitleForChange(change),
         change.title,
         change.summary,
         change.theme,
@@ -823,7 +862,7 @@ function renderVigenciaRuler(changes) {
                 style="left: ${((change.distance - rangeStart) / rangeSpan) * 100}%; top: ${
                   54 + change.lane * 26
                 }px"
-                title="${escapeHtml(change.title)} - ${formatDate(change.effectiveDate)}"
+                title="${escapeHtml(displayTitleForChange(change))} - ${formatDate(change.effectiveDate)}"
               >
                 <span>${escapeHtml(change.protocol)}</span>
               </button>
@@ -853,7 +892,7 @@ function renderVigenciaRuler(changes) {
                       change.id
                     }">
                       <span class="${severityClass(change.severity)}">${severityLabels[change.severity]}</span>
-                      <strong>${escapeHtml(change.title)}</strong>
+                      <strong>${escapeHtml(displayTitleForChange(change))}</strong>
                       <em>${formatDate(change.effectiveDate)}</em>
                     </button>
                   `,
@@ -875,7 +914,7 @@ function renderAnalysisRow(change) {
         <small>${escapeHtml(source.url)}</small>
       </span>
       <span class="analysis-copy">
-        <strong>${escapeHtml(change.title)}</strong>
+        <strong>${escapeHtml(displayTitleForChange(change))}</strong>
         <small>Trecho: ${escapeHtml(change.changedExcerpt)}</small>
       </span>
       <span class="${severityClass(change.severity)}">${severityLabels[change.severity]}</span>
@@ -952,7 +991,7 @@ function renderChangeDialog() {
         <div class="change-dialog-bar">
           <div>
             <p class="eyebrow">Detalhe do aviso</p>
-            <h2 id="change-dialog-title">${escapeHtml(change.title)}</h2>
+            <h2 id="change-dialog-title">${escapeHtml(displayTitleForChange(change))}</h2>
           </div>
           <button class="button icon-button" type="button" data-action="close-change-dialog" aria-label="Fechar detalhes">×</button>
         </div>
@@ -1053,7 +1092,7 @@ function renderChangeCard(change) {
           <span class="${severityClass(change.severity)}">${severityLabels[change.severity]}</span>
           <span class="protocol-stamp">No ${escapeHtml(enriched.protocol)}</span>
         </span>
-        <strong>${escapeHtml(enriched.title)}</strong>
+        <strong>${escapeHtml(displayTitleForChange(enriched))}</strong>
         <span>${escapeHtml(source.name)} - ${deadlineLabel(enriched)}</span>
       </button>
       <span class="${statusClass(change.status)}">${statusLabels[change.status]}</span>
@@ -1072,7 +1111,7 @@ function renderChangeDetail(change) {
           ${renderSeverityHelp()}
           <span class="protocol-stamp">No ${escapeHtml(enriched.protocol)}</span>
         </div>
-        <h2>${escapeHtml(enriched.title)}</h2>
+        <h2>${escapeHtml(displayTitleForChange(enriched))}</h2>
         <p>${escapeHtml(source.agency)} - ${formatDateTime(enriched.detectedAt)}</p>
       </div>
 
@@ -1241,7 +1280,7 @@ function enrichedCalendarEvents() {
       const kindLabel = calendarKindLabel(change);
       return {
         id: `cal-${change.id}`,
-        title: change.title,
+        title: displayTitleForChange(change),
         displayTitle,
         date,
         severity: change.severity,
@@ -1265,10 +1304,7 @@ function enrichedCalendarEvents() {
 }
 
 function calendarEventTitle(change, source) {
-  if (!/alteracao detectada/i.test(change.title)) return change.title;
-  const subject =
-    change.theme && change.theme !== "Outro" ? change.theme : change.documents.slice(0, 2).join(", ");
-  return `${source.name}: ${subject}`;
+  return isGenericChangeTitle(change.title) ? titleForDetectedChange(source, change) : displayTitleForChange(change);
 }
 
 function renderCalendarTooltip(event) {
@@ -1433,7 +1469,7 @@ function renderReviewItem(change) {
     <article class="review-item">
       <div>
         <span class="${severityClass(change.severity)}">${severityLabels[change.severity]}</span>
-        <h3>${escapeHtml(change.title)}</h3>
+        <h3>${escapeHtml(displayTitleForChange(change))}</h3>
         <p>${escapeHtml(source.name)} - ${escapeHtml(change.summary)}</p>
       </div>
       <div class="button-row">
@@ -1616,7 +1652,7 @@ function simulateCheck(sourceId) {
   const change = {
     id: `chg-sim-${suffix}`,
     sourceId: source.id,
-    title: `${source.name}: alteracao detectada`,
+    title: titleForDetectedChange(source),
     protocol: `2026/${String(200 + Number(suffix.slice(-3))).padStart(4, "0")}`,
     detectedAt: now.toISOString(),
     publicationDate: now.toISOString().slice(0, 10),
@@ -1671,7 +1707,7 @@ function exportCsv() {
       const source = sourceFor(change);
       return [
         enriched.protocol,
-        enriched.title,
+        displayTitleForChange(enriched),
         source.name,
         enriched.uf ?? "Nacional",
         enriched.documents.join(", "),
