@@ -149,6 +149,16 @@ const nationalSources = [
     severity: "HIGH",
   }),
   source({
+    id: "nfse-noticias",
+    name: "NFS-e - Noticias",
+    agency: "Gov.br NFS-e",
+    category: "NACIONAL",
+    documents: ["NFS-e"],
+    url: "https://www.gov.br/nfse/pt-br/noticias",
+    frequency: "DAILY",
+    severity: "MEDIUM",
+  }),
+  source({
     id: "nfse-documentacao",
     name: "NFS-e - Documentacao Tecnica",
     agency: "Gov.br NFS-e",

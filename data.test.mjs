@@ -12,6 +12,7 @@ assert.equal(ufSet.size, 27, "seed deve conter 27 UFs estaduais");
 assert.ok(nationalSources.length >= 10, "seed deve conter fontes nacionais");
 assert.ok(sourceIds.has("nfe-notas-tecnicas"), "seed deve conter NT NF-e");
 assert.ok(sourceIds.has("nfe-esquemas-xml"), "seed deve conter esquemas XML NF-e");
+assert.ok(sourceIds.has("nfse-noticias"), "seed deve conter noticias NFS-e");
 assert.ok(sourceIds.has("nfcom-svrs-documentos"), "seed deve conter documentos NFCom SVRS");
 assert.ok(sourceIds.has("bpe-svrs-documentos"), "seed deve conter documentos BP-e SVRS");
 assert.ok(sourceIds.has("sefaz-sp-cbenef"), "seed deve conter cBenef SP");
