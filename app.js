@@ -5,7 +5,7 @@ import {
   severityLabels,
   sourceSeed,
   statusLabels,
-} from "./data.js?v=20260714-source-admin";
+} from "./data.js?v=20260714-acbr-calendar";
 
 const storageKeys = {
   changes: "monitor-fiscal:changes",
@@ -246,8 +246,23 @@ function calendarDateForChange(change) {
   return change.productionDate || dateFromOperationalText(change);
 }
 
+function normalizedChangeText(change) {
+  return changeText(change)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
 function calendarKindLabel(change) {
-  return isOperationalStop(change) ? "Indisponibilidade" : "Vigencia";
+  if (isOperationalStop(change)) return "Indisponibilidade";
+
+  const text = normalizedChangeText(change);
+  if (text.includes("homologacao")) return "Homologacao";
+  if (text.includes("producao")) return "Producao";
+  if (text.includes("obrigatoriedade") || text.includes("obrigatorio")) return "Obrigatoriedade";
+  if (text.includes("ajuste sinief")) return "Prazo SINIEF";
+
+  return "Prazo";
 }
 
 function offsetLabel(value) {

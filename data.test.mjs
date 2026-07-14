@@ -13,6 +13,7 @@ assert.ok(nationalSources.length >= 10, "seed deve conter fontes nacionais");
 assert.ok(sourceIds.has("nfe-notas-tecnicas"), "seed deve conter NT NF-e");
 assert.ok(sourceIds.has("nfe-esquemas-xml"), "seed deve conter esquemas XML NF-e");
 assert.ok(sourceIds.has("nfse-noticias"), "seed deve conter noticias NFS-e");
+assert.ok(sourceIds.has("acbr-prazos-sefaz"), "seed deve conter calendario ACBr Prazos SEFAZ");
 assert.ok(sourceIds.has("nfcom-svrs-documentos"), "seed deve conter documentos NFCom SVRS");
 assert.ok(sourceIds.has("bpe-svrs-documentos"), "seed deve conter documentos BP-e SVRS");
 assert.ok(sourceIds.has("sefaz-sp-cbenef"), "seed deve conter cBenef SP");
@@ -47,6 +48,15 @@ const requiredBackfillIds = [
   "chg-cte-nt-2026-002-rtc",
   "chg-mdfe-nt-2026-001-ciot",
   "chg-nfcom-nt-2026-002-rtc",
+  "chg-acbr-ajuste-sinief-09-2026-nfce-destinatario-2026-08-03",
+  "chg-acbr-ajuste-sinief-10-2026-danfe-simplificado-tipo-2-2026-08-03",
+  "chg-acbr-ajuste-sinief-14-2026-danfe-simplificado-contingencia-2026-08-03",
+  "chg-acbr-rtc-nt-2025-002-v136-producao-2026-08-03",
+  "chg-acbr-nfe-nfce-nt-2025-002-v140-producao-2026-08-03",
+  "chg-acbr-dfe-nt-2026-001-producao-2026-08-03",
+  "chg-acbr-danfe-simplificado-nt-2026-003-producao-2026-08-03",
+  "chg-acbr-nt-2026-002-rtc-cte-nfcom-nf3e-bpe-producao-2026-08-03",
+  "chg-acbr-nt-2026-002-rtc-cte-nfcom-nf3e-bpe-homologacao-2026-08-03",
 ];
 
 for (const id of requiredBackfillIds) {
@@ -84,6 +94,19 @@ const nfseCnpjOutageEvent = calendarSeed.find(
 assert.ok(nfseCnpjOutageEvent, "calendario deve conter indisponibilidade CNPJ NFS-e");
 assert.equal(nfseCnpjOutageEvent.date, "2026-07-25");
 assert.match(nfseCnpjOutageEvent.title, /^Indisponibilidade:/);
+
+const acbrAugust3Events = calendarSeed.filter(
+  (event) => event.sourceId === "acbr-prazos-sefaz" && event.date === "2026-08-03",
+);
+assert.equal(acbrAugust3Events.length, 9, "calendario deve conter 9 prazos ACBr em 03/08/2026");
+assert.ok(
+  acbrAugust3Events.some((event) => /NT 2025\.002 v1\.40/.test(event.title)),
+  "calendario deve conter NT 2025.002 v1.40 em 03/08/2026",
+);
+assert.ok(
+  acbrAugust3Events.some((event) => /^Homologacao: NT 2026\.002/.test(event.title)),
+  "calendario deve diferenciar homologacao ACBr em 03/08/2026",
+);
 
 const rssItems = getRssItems();
 assert.ok(rssItems.length > 0, "RSS deve conter avisos");

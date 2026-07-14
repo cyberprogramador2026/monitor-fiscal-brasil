@@ -159,6 +159,17 @@ const nationalSources = [
     severity: "MEDIUM",
   }),
   source({
+    id: "acbr-prazos-sefaz",
+    name: "ACBr - Prazos SEFAZ",
+    agency: "Projeto ACBr",
+    category: "NACIONAL",
+    documents: ["NF-e", "NFC-e", "CT-e", "MDF-e", "NFCom", "NF3e", "BP-e", "RTC"],
+    url: "https://www.projetoacbr.com.br/forum/events/4-prazos-sefaz/",
+    frequency: "DAILY",
+    severity: "HIGH",
+    checked: "2026-07-14T15:30:00-03:00",
+  }),
+  source({
     id: "nfse-documentacao",
     name: "NFS-e - Documentacao Tecnica",
     agency: "Gov.br NFS-e",
@@ -905,6 +916,288 @@ const retroactiveChanges = [
   },
 ];
 
+const acbrAugust3CalendarChanges = [
+  {
+    id: "chg-acbr-ajuste-sinief-09-2026-nfce-destinatario-2026-08-03",
+    sourceId: "acbr-prazos-sefaz",
+    title: "Ajuste SINIEF 09/2026 amplia identificacao do destinatario na NFC-e",
+    protocol: "ACBr/2914",
+    detectedAt: "2026-07-14T12:30:00-03:00",
+    publicationDate: "2026-07-14",
+    homologationDate: "",
+    productionDate: "2026-08-03",
+    effectiveDate: "2026-08-03",
+    area: "Fiscal",
+    evidence: "ajuste-sinief-09-2026-nfce-destinatario",
+    evidenceUrl:
+      "https://www.projetoacbr.com.br/forum/events/event/2914-ajuste-sinief-n%C2%BA092026-aumenta-situa%C3%A7%C3%B5es-em-que-o-destinat%C3%A1rio-deve-ser-informado-na-nfc-e/",
+    severity: "HIGH",
+    status: "IN_REVIEW",
+    theme: "Ajuste SINIEF",
+    uf: null,
+    documents: ["NFC-e", "NF-e", "Destinatario"],
+    confidence: 84,
+    summary:
+      "O calendario ACBr Prazos SEFAZ marca 03/08/2026 para o Ajuste SINIEF 09/2026, que aumenta situacoes em que o destinatario deve ser informado na NFC-e.",
+    impact:
+      "Pode exigir revisao de regras fiscais, cadastro de cliente e validacoes de emissao NFC-e quando a identificacao do destinatario passar a ser obrigatoria.",
+    action:
+      "Conferir a regra oficial do ajuste, mapear cenarios de NFC-e com destinatario e preparar testes de emissao para clientes afetados.",
+    changedExcerpt:
+      "Evento ACBr de 03/08/2026 para Ajuste SINIEF 09/2026 sobre identificacao do destinatario na NFC-e.",
+    diffBefore: "Calendario interno nao tinha este prazo ACBr de 03/08/2026.",
+    diffAfter: "Prazo cadastrado no calendario fiscal para acompanhamento de impacto em NFC-e.",
+  },
+  {
+    id: "chg-acbr-ajuste-sinief-10-2026-danfe-simplificado-tipo-2-2026-08-03",
+    sourceId: "acbr-prazos-sefaz",
+    title: "Ajuste SINIEF 10/2026 ativa apresentacao eletronica do DANFE Simplificado Tipo 2",
+    protocol: "ACBr/2915",
+    detectedAt: "2026-07-14T12:29:00-03:00",
+    publicationDate: "2026-07-14",
+    homologationDate: "",
+    productionDate: "2026-08-03",
+    effectiveDate: "2026-08-03",
+    area: "Fiscal",
+    evidence: "ajuste-sinief-10-2026-danfe-simplificado-tipo-2",
+    evidenceUrl:
+      "https://www.projetoacbr.com.br/forum/events/event/2915-ajuste-sinief-n%C2%BA102026-apresenta%C3%A7%C3%A3o-eletr%C3%B4nica-do-danfe-simplificado-tipo-2/",
+    severity: "HIGH",
+    status: "IN_REVIEW",
+    theme: "DANFE Simplificado",
+    uf: null,
+    documents: ["NF-e", "DANFE", "DANFE Simplificado"],
+    confidence: 84,
+    summary:
+      "O calendario ACBr Prazos SEFAZ marca 03/08/2026 para o Ajuste SINIEF 10/2026 sobre apresentacao eletronica do DANFE Simplificado Tipo 2.",
+    impact:
+      "Pode afetar impressao, envio digital, visualizacao e regras de contingencia relacionadas ao DANFE Simplificado em emissores e ERPs.",
+    action:
+      "Revisar requisitos do DANFE Simplificado Tipo 2, validar layout e comunicar suporte sobre mudanca de apresentacao eletronica.",
+    changedExcerpt:
+      "Evento ACBr de 03/08/2026 para apresentacao eletronica do DANFE Simplificado Tipo 2.",
+    diffBefore: "Calendario interno nao tinha este prazo ACBr de 03/08/2026.",
+    diffAfter: "Prazo cadastrado no calendario fiscal para acompanhamento do DANFE Simplificado.",
+  },
+  {
+    id: "chg-acbr-ajuste-sinief-14-2026-danfe-simplificado-contingencia-2026-08-03",
+    sourceId: "acbr-prazos-sefaz",
+    title: "Ajuste SINIEF 14/2026 trata DANFE Simplificado Tipo 2 em contingencia",
+    protocol: "ACBr/2917",
+    detectedAt: "2026-07-14T12:28:00-03:00",
+    publicationDate: "2026-07-14",
+    homologationDate: "",
+    productionDate: "2026-08-03",
+    effectiveDate: "2026-08-03",
+    area: "Fiscal",
+    evidence: "ajuste-sinief-14-2026-danfe-simplificado-contingencia",
+    evidenceUrl:
+      "https://www.projetoacbr.com.br/forum/events/event/2917-ajuste-sinief-n%C2%BA142026-danfe-simplificado-tipo-2-para-conting%C3%AAncia/",
+    severity: "HIGH",
+    status: "IN_REVIEW",
+    theme: "Contingencia",
+    uf: null,
+    documents: ["NF-e", "DANFE", "DANFE Simplificado", "Contingencia"],
+    confidence: 84,
+    summary:
+      "O calendario ACBr Prazos SEFAZ marca 03/08/2026 para o Ajuste SINIEF 14/2026 envolvendo DANFE Simplificado Tipo 2 para contingencia.",
+    impact:
+      "Pode mudar procedimentos de contingencia, impressao e orientacoes operacionais quando o DANFE Simplificado Tipo 2 for usado em emissao alternativa.",
+    action:
+      "Conferir a regra oficial do ajuste, testar fluxo de contingencia e atualizar orientacoes para suporte e implantacao.",
+    changedExcerpt:
+      "Evento ACBr de 03/08/2026 para DANFE Simplificado Tipo 2 em contingencia.",
+    diffBefore: "Calendario interno nao tinha este prazo ACBr de 03/08/2026.",
+    diffAfter: "Prazo cadastrado no calendario fiscal para acompanhamento de contingencia.",
+  },
+  {
+    id: "chg-acbr-rtc-nt-2025-002-v136-producao-2026-08-03",
+    sourceId: "acbr-prazos-sefaz",
+    title: "NT 2025.002 v1.36 inicia regras da RTC em producao",
+    protocol: "ACBr/2926",
+    detectedAt: "2026-07-14T12:27:00-03:00",
+    publicationDate: "2026-07-14",
+    homologationDate: "",
+    productionDate: "2026-08-03",
+    effectiveDate: "2026-08-03",
+    area: "Desenvolvimento",
+    evidence: "rtc-nt-2025-002-v136-producao",
+    evidenceUrl:
+      "https://www.projetoacbr.com.br/forum/events/event/2926-inicio-das-regras-da-reforma-tribut%C3%A1ria-do-consumo-rtc-da-nt-2025002-v136-em-ambiente-de-produ%C3%A7%C3%A3o/",
+    severity: "CRITICAL",
+    status: "IN_REVIEW",
+    theme: "Reforma Tributaria",
+    uf: null,
+    documents: ["NF-e", "NFC-e", "RTC", "IBS/CBS/IS"],
+    confidence: 86,
+    summary:
+      "O calendario ACBr Prazos SEFAZ marca 03/08/2026 para inicio das regras da Reforma Tributaria do Consumo da NT 2025.002 v1.36 em producao.",
+    impact:
+      "Afeta campos, regras de validacao e calculos ligados a IBS, CBS e Imposto Seletivo nos documentos impactados pela RTC.",
+    action:
+      "Comparar a NT 2025.002 v1.36 com a base atual, validar XML e regras em ambiente de teste e preparar roteiro de ativacao em producao.",
+    changedExcerpt:
+      "Evento ACBr de 03/08/2026 para inicio das regras RTC da NT 2025.002 v1.36 em producao.",
+    diffBefore: "Calendario interno nao tinha este prazo ACBr de 03/08/2026.",
+    diffAfter: "Prazo cadastrado no calendario fiscal para ativacao de regras RTC.",
+  },
+  {
+    id: "chg-acbr-nfe-nfce-nt-2025-002-v140-producao-2026-08-03",
+    sourceId: "acbr-prazos-sefaz",
+    title: "NF-e/NFC-e NT 2025.002 v1.40 entra em producao",
+    protocol: "ACBr/2931",
+    detectedAt: "2026-07-14T12:26:00-03:00",
+    publicationDate: "2026-07-14",
+    homologationDate: "",
+    productionDate: "2026-08-03",
+    effectiveDate: "2026-08-03",
+    area: "Desenvolvimento",
+    evidence: "nfe-nfce-nt-2025-002-v140-producao",
+    evidenceUrl:
+      "https://www.projetoacbr.com.br/forum/events/event/2931-nfenfce-produ%C3%A7%C3%A3o-implementa%C3%A7%C3%A3o-da-nt2025002-v140-inclus%C3%A3o-de-campos-e-regras-de-valida%C3%A7%C3%A3o/",
+    severity: "CRITICAL",
+    status: "IN_REVIEW",
+    theme: "Reforma Tributaria",
+    uf: null,
+    documents: ["NF-e", "NFC-e", "RTC", "XML"],
+    confidence: 86,
+    summary:
+      "O calendario ACBr Prazos SEFAZ marca 03/08/2026 para implementacao em producao da NT 2025.002 v1.40 em NF-e/NFC-e, com inclusao de campos e regras de validacao.",
+    impact:
+      "Pode gerar rejeicoes em emissao se XML, regras fiscais, schemas e calculos RTC nao estiverem aderentes a versao em producao.",
+    action:
+      "Atualizar schemas e validacoes, testar emissao NF-e/NFC-e com novos campos e revisar mensagens de rejeicao esperadas.",
+    changedExcerpt:
+      "Evento ACBr de 03/08/2026 para producao da NT 2025.002 v1.40 em NF-e/NFC-e.",
+    diffBefore: "Calendario interno nao tinha este prazo ACBr de 03/08/2026.",
+    diffAfter: "Prazo cadastrado no calendario fiscal para producao NF-e/NFC-e RTC.",
+  },
+  {
+    id: "chg-acbr-dfe-nt-2026-001-producao-2026-08-03",
+    sourceId: "acbr-prazos-sefaz",
+    title: "DF-e NT 2026.001 entra em producao",
+    protocol: "ACBr/2940",
+    detectedAt: "2026-07-14T12:25:00-03:00",
+    publicationDate: "2026-07-14",
+    homologationDate: "",
+    productionDate: "2026-08-03",
+    effectiveDate: "2026-08-03",
+    area: "Desenvolvimento",
+    evidence: "dfe-nt-2026-001-producao",
+    evidenceUrl:
+      "https://www.projetoacbr.com.br/forum/events/event/2940-dfe-produ%C3%A7%C3%A3o-implanta%C3%A7%C3%A3o-da-nota-t%C3%A9cnica-2026001-em-ambiente-de-produ%C3%A7%C3%A3o/",
+    severity: "HIGH",
+    status: "IN_REVIEW",
+    theme: "Nota Tecnica",
+    uf: null,
+    documents: ["DF-e", "XML"],
+    confidence: 84,
+    summary:
+      "O calendario ACBr Prazos SEFAZ marca 03/08/2026 para implantacao da Nota Tecnica 2026.001 de DF-e em ambiente de producao.",
+    impact:
+      "Pode afetar schemas, validacoes e fluxos compartilhados entre documentos fiscais eletronicos.",
+    action:
+      "Identificar documentos atingidos pela NT 2026.001, revisar schemas e montar bateria de emissao e consulta em producao assistida.",
+    changedExcerpt:
+      "Evento ACBr de 03/08/2026 para implantacao da NT 2026.001 de DF-e em producao.",
+    diffBefore: "Calendario interno nao tinha este prazo ACBr de 03/08/2026.",
+    diffAfter: "Prazo cadastrado no calendario fiscal para NT 2026.001 de DF-e.",
+  },
+  {
+    id: "chg-acbr-danfe-simplificado-nt-2026-003-producao-2026-08-03",
+    sourceId: "acbr-prazos-sefaz",
+    title: "DANFE Simplificado NT 2026.003 v1.00 entra em producao",
+    protocol: "ACBr/2943",
+    detectedAt: "2026-07-14T12:24:00-03:00",
+    publicationDate: "2026-07-14",
+    homologationDate: "",
+    productionDate: "2026-08-03",
+    effectiveDate: "2026-08-03",
+    area: "Desenvolvimento",
+    evidence: "danfe-simplificado-nt-2026-003-v100-producao",
+    evidenceUrl:
+      "https://www.projetoacbr.com.br/forum/events/event/2943-danfe-simplificado-implanta%C3%A7%C3%A3o-da-nota-t%C3%A9cnica-2026003-v100-em-ambiente-de-produ%C3%A7%C3%A3o/",
+    severity: "HIGH",
+    status: "IN_REVIEW",
+    theme: "DANFE Simplificado",
+    uf: null,
+    documents: ["NF-e", "DANFE", "DANFE Simplificado"],
+    confidence: 84,
+    summary:
+      "O calendario ACBr Prazos SEFAZ marca 03/08/2026 para implantacao da NT 2026.003 v1.00 do DANFE Simplificado em ambiente de producao.",
+    impact:
+      "Afeta representacao impressa ou simplificada da NF-e, geracao de PDF, envio ao cliente e possiveis regras de contingencia.",
+    action:
+      "Validar geracao do DANFE Simplificado, conferir compatibilidade de layout e preparar checklist de atendimento para clientes.",
+    changedExcerpt:
+      "Evento ACBr de 03/08/2026 para producao da NT 2026.003 v1.00 do DANFE Simplificado.",
+    diffBefore: "Calendario interno nao tinha este prazo ACBr de 03/08/2026.",
+    diffAfter: "Prazo cadastrado no calendario fiscal para DANFE Simplificado em producao.",
+  },
+  {
+    id: "chg-acbr-nt-2026-002-rtc-cte-nfcom-nf3e-bpe-producao-2026-08-03",
+    sourceId: "acbr-prazos-sefaz",
+    title: "NT 2026.002 v1.00 torna obrigatorios campos RTC em CT-e, NFCom, NF3e e BP-e",
+    protocol: "ACBr/2951",
+    detectedAt: "2026-07-14T12:23:00-03:00",
+    publicationDate: "2026-07-14",
+    homologationDate: "",
+    productionDate: "2026-08-03",
+    effectiveDate: "2026-08-03",
+    area: "Desenvolvimento",
+    evidence: "nt-2026-002-v100-rtc-producao-cte-nfcom-nf3e-bpe",
+    evidenceUrl:
+      "https://www.projetoacbr.com.br/forum/events/event/2951-nota-t%C3%A9cnica-2026002-v100-obrigatoriedade-do-preenchimento-dos-novos-campos-da-rtc-em-produ%C3%A7%C3%A3o-para-ct-e-nfcom-nf3e-e-bpe/",
+    severity: "CRITICAL",
+    status: "IN_REVIEW",
+    theme: "Reforma Tributaria",
+    uf: null,
+    documents: ["CT-e", "NFCom", "NF3e", "BP-e", "RTC", "IBS/CBS/IS"],
+    confidence: 86,
+    summary:
+      "O calendario ACBr Prazos SEFAZ marca 03/08/2026 para obrigatoriedade dos novos campos da RTC em producao para CT-e, NFCom, NF3e e BP-e pela NT 2026.002 v1.00.",
+    impact:
+      "Emissores desses documentos podem sofrer rejeicoes se os campos RTC, calculos e regras de preenchimento nao forem implementados.",
+    action:
+      "Planejar atualizacao por documento, testar cenarios com IBS/CBS/IS e criar alerta para clientes que emitem CT-e, NFCom, NF3e ou BP-e.",
+    changedExcerpt:
+      "Evento ACBr de 03/08/2026 para obrigatoriedade dos campos RTC em CT-e, NFCom, NF3e e BP-e.",
+    diffBefore: "Calendario interno nao tinha este prazo ACBr de 03/08/2026.",
+    diffAfter: "Prazo cadastrado no calendario fiscal para obrigatoriedade RTC multi-documento.",
+  },
+  {
+    id: "chg-acbr-nt-2026-002-rtc-cte-nfcom-nf3e-bpe-homologacao-2026-08-03",
+    sourceId: "acbr-prazos-sefaz",
+    title: "NT 2026.002 v1.00 libera homologacao RTC para CT-e, NFCom, NF3e e BP-e",
+    protocol: "ACBr/2952",
+    detectedAt: "2026-07-14T12:22:00-03:00",
+    publicationDate: "2026-07-14",
+    homologationDate: "2026-08-03",
+    productionDate: "",
+    effectiveDate: "2026-08-03",
+    area: "Desenvolvimento",
+    evidence: "nt-2026-002-v100-rtc-homologacao-cte-nfcom-nf3e-bpe",
+    evidenceUrl:
+      "https://www.projetoacbr.com.br/forum/events/event/2952-nota-t%C3%A9cnica-2026002-v100-implanta%C3%A7%C3%A3o-dos-novos-campos-e-regras-em-homologa%C3%A7%C3%A3o-para-ct-e-nfcom-nf3e-e-bpe/",
+    severity: "HIGH",
+    status: "IN_REVIEW",
+    theme: "Reforma Tributaria",
+    uf: null,
+    documents: ["CT-e", "NFCom", "NF3e", "BP-e", "RTC", "Homologacao"],
+    confidence: 86,
+    summary:
+      "O calendario ACBr Prazos SEFAZ marca 03/08/2026 para implantacao em homologacao dos novos campos e regras da NT 2026.002 v1.00 para CT-e, NFCom, NF3e e BP-e.",
+    impact:
+      "Abre janela de testes para documentos afetados pela RTC antes da obrigatoriedade em producao.",
+    action:
+      "Criar massa de testes por documento, validar XML em homologacao e registrar diferencas antes da entrada obrigatoria em producao.",
+    changedExcerpt:
+      "Evento ACBr de 03/08/2026 para homologacao dos campos e regras RTC em CT-e, NFCom, NF3e e BP-e.",
+    diffBefore: "Calendario interno nao tinha este prazo ACBr de 03/08/2026.",
+    diffAfter: "Prazo cadastrado no calendario fiscal para homologacao RTC multi-documento.",
+  },
+];
+
 export const changeSeed = [
   ...retroactiveChanges,
   {
@@ -939,6 +1232,7 @@ export const changeSeed = [
     diffAfter:
       "Aviso operacional criado para acompanhar indisponibilidade do CNPJ em 25/07/2026 e risco de falhas em integracoes nao adaptadas.",
   },
+  ...acbrAugust3CalendarChanges,
   {
     id: "chg-dfe-distribuicao-104",
     sourceId: "nfe-esquemas-xml",
@@ -1361,8 +1655,27 @@ function calendarDateForChange(change) {
   return change.productionDate || dateFromOperationalText(change);
 }
 
+function normalizedChangeText(change) {
+  return changeText(change)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function calendarKindLabel(change) {
+  if (isOperationalStop(change)) return "Indisponibilidade";
+
+  const text = normalizedChangeText(change);
+  if (text.includes("homologacao")) return "Homologacao";
+  if (text.includes("producao")) return "Producao";
+  if (text.includes("obrigatoriedade") || text.includes("obrigatorio")) return "Obrigatoriedade";
+  if (text.includes("ajuste sinief")) return "Prazo SINIEF";
+
+  return "Prazo";
+}
+
 function calendarTitleForChange(change) {
-  return `${isOperationalStop(change) ? "Indisponibilidade" : "Vigencia"}: ${change.title}`;
+  return `${calendarKindLabel(change)}: ${change.title}`;
 }
 
 export const calendarSeed = changeSeed
