@@ -5,7 +5,7 @@ import {
   severityLabels,
   sourceSeed,
   statusLabels,
-} from "./data.js?v=20260714-title-fix";
+} from "./data.js?v=20260714-source-admin";
 
 const storageKeys = {
   changes: "monitor-fiscal:changes",
@@ -336,6 +336,8 @@ function supervisorActionLabel(gate = state.supervisorGate) {
   if (gate.type === "status" && gate.status === "PUBLISHED") return "publicar este aviso";
   if (gate.type === "status" && gate.status === "IGNORED") return "ignorar este aviso";
   if (gate.type === "calendar-ignore") return "remover este item do calendario";
+  if (gate.type === "source-add") return "adicionar esta fonte";
+  if (gate.type === "source-remove") return "remover esta fonte";
   return "concluir a revisao";
 }
 
@@ -581,6 +583,34 @@ function sourceFor(change) {
     url: "#",
     uf: null,
   };
+}
+
+function sourceIsSeed(source) {
+  return sourceSeed.some((seed) => seed.id === source.id);
+}
+
+function slugFrom(value) {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 44);
+}
+
+function uniqueSourceId(name, url) {
+  const base = slugFrom(name) || slugFrom(url) || "fonte";
+  const existing = new Set(store.sources.map((source) => source.id));
+  if (!existing.has(base)) return base;
+
+  let index = 2;
+  while (existing.has(`${base}-${index}`)) index += 1;
+  return `${base}-${index}`;
+}
+
+function hashFromValue(value) {
+  return slugFrom(value).replace(/-/g, "").slice(0, 6).padEnd(6, "0");
 }
 
 function isGenericChangeTitle(value) {
@@ -1344,6 +1374,7 @@ function buildCalendarCells(month, events) {
 
 function renderFontes() {
   const sources = store.sources
+    .filter((source) => source.active !== false)
     .filter((source) => {
       const query = state.query.trim().toLowerCase();
       const haystack = [source.name, source.agency, source.uf, source.documents.join(" ")]
@@ -1364,6 +1395,59 @@ function renderFontes() {
         <input type="search" value="${escapeHtml(state.query)}" data-filter="query" placeholder="SEFAZ, NF-e, SP" />
       </label>
       <button class="button" type="button" data-action="reset-demo">Restaurar seed</button>
+    </section>
+    <section class="panel source-admin-panel">
+      <div class="panel-heading">
+        <div>
+          <p class="eyebrow">Supervisor</p>
+          <h2>Adicionar fonte</h2>
+        </div>
+      </div>
+      <form class="source-form" data-source-form>
+        <label>
+          <span>Nome</span>
+          <input name="sourceName" required placeholder="SEFAZ UF - Noticias" />
+        </label>
+        <label>
+          <span>Orgao</span>
+          <input name="sourceAgency" required placeholder="SEFAZ UF" />
+        </label>
+        <label>
+          <span>URL</span>
+          <input name="sourceUrl" required type="url" placeholder="https://..." />
+        </label>
+        <label>
+          <span>UF</span>
+          <input name="sourceUf" maxlength="2" placeholder="Nacional" />
+        </label>
+        <label>
+          <span>Documentos</span>
+          <input name="sourceDocuments" required placeholder="NF-e, NFC-e, Manutencao" />
+        </label>
+        <label>
+          <span>Frequencia</span>
+          <select name="sourceFrequency">
+            ${Object.entries(frequencyLabels)
+              .map(([value, label]) => `<option value="${value}">${label}</option>`)
+              .join("")}
+          </select>
+        </label>
+        <label>
+          <span>Criticidade</span>
+          <select name="sourceSeverity">
+            ${Object.entries(severityLabels)
+              .map(
+                ([value, label]) =>
+                  `<option value="${value}" ${value === "MEDIUM" ? "selected" : ""}>${label}</option>`,
+              )
+              .join("")}
+          </select>
+        </label>
+        <div class="source-form-actions">
+          <button class="button button-primary" type="submit">Adicionar fonte</button>
+          <span>Solicita login de supervisor.</span>
+        </div>
+      </form>
     </section>
     <section class="panel">
       <div class="panel-heading">
@@ -1407,9 +1491,14 @@ function renderSourceRow(source) {
       <td><span class="${severityClass(source.severity)}">${severityLabels[source.severity]}</span></td>
       <td>${formatDateTime(source.lastCheckedAt)}</td>
       <td>
-        <button class="button table-button" type="button" data-action="check-source" data-id="${source.id}">
-          Verificar
-        </button>
+        <div class="table-actions">
+          <button class="button table-button" type="button" data-action="check-source" data-id="${source.id}">
+            Verificar
+          </button>
+          <button class="button button-muted table-button" type="button" data-action="remove-source" data-id="${source.id}">
+            Remover
+          </button>
+        </div>
       </td>
     </tr>
   `;
@@ -1488,7 +1577,7 @@ function bindDynamicActions() {
   document.querySelectorAll("[data-filter]").forEach((input) => {
     input.addEventListener("input", () => {
       state[input.dataset.filter] = input.value;
-      render();
+      renderPreservingFocus(input);
     });
   });
 
@@ -1502,6 +1591,27 @@ function bindDynamicActions() {
       handleSupervisorLogin(form);
     });
   });
+
+  document.querySelectorAll("[data-source-form]").forEach((form) => {
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      handleSourceForm(form);
+    });
+  });
+}
+
+function renderPreservingFocus(element) {
+  const filter = element.dataset.filter;
+  const start = typeof element.selectionStart === "number" ? element.selectionStart : null;
+  const end = typeof element.selectionEnd === "number" ? element.selectionEnd : null;
+  render();
+
+  const next = document.querySelector(`[data-filter="${filter}"]`);
+  if (!next) return;
+  next.focus({ preventScroll: true });
+  if (start !== null && typeof next.setSelectionRange === "function") {
+    next.setSelectionRange(start, end ?? start);
+  }
 }
 
 function handleAction(action, id) {
@@ -1524,6 +1634,7 @@ function handleAction(action, id) {
     "export-csv": exportCsv,
     "simulate-check": () => simulateCheck(),
     "check-source": () => simulateCheck(id),
+    "remove-source": () => requestSupervisorAction({ type: "source-remove", id }),
     "ruler-prev": () => {
       state.rulerStartDay -= 30;
       render();
@@ -1615,7 +1726,103 @@ function performSupervisorAction(action) {
 
   if (action.type === "calendar-ignore") {
     ignoreCalendarEvent(action.id);
+    return;
   }
+
+  if (action.type === "source-add") {
+    addSource(action.source);
+    return;
+  }
+
+  if (action.type === "source-remove") {
+    removeSource(action.id);
+  }
+}
+
+function handleSourceForm(form) {
+  const data = new FormData(form);
+  const name = String(data.get("sourceName") ?? "").trim();
+  const agency = String(data.get("sourceAgency") ?? "").trim();
+  const url = String(data.get("sourceUrl") ?? "").trim();
+  const uf = String(data.get("sourceUf") ?? "").trim().toUpperCase();
+  const documents = String(data.get("sourceDocuments") ?? "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+  const frequency = String(data.get("sourceFrequency") ?? "DAILY");
+  const severity = String(data.get("sourceSeverity") ?? "MEDIUM");
+
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(url);
+  } catch {
+    showToast("Informe uma URL valida para a fonte.");
+    return;
+  }
+
+  if (!["http:", "https:"].includes(parsedUrl.protocol)) {
+    showToast("A URL precisa usar http ou https.");
+    return;
+  }
+
+  if (!name || !agency || !documents.length) {
+    showToast("Preencha nome, orgao, URL e documentos.");
+    return;
+  }
+
+  if (uf && !/^[A-Z]{2}$/.test(uf)) {
+    showToast("UF deve ter duas letras, como SP ou RJ.");
+    return;
+  }
+
+  const source = {
+    id: uniqueSourceId(name, parsedUrl.href),
+    name,
+    agency,
+    uf: uf || null,
+    category: uf ? "ESTADUAL" : "NACIONAL",
+    documents,
+    url: parsedUrl.href,
+    frequency,
+    severity,
+    mode: "HTML_TEXT",
+    active: true,
+    lastCheckedAt: new Date().toISOString(),
+    lastHash: hashFromValue(parsedUrl.href),
+  };
+
+  requestSupervisorAction({ type: "source-add", source });
+}
+
+function addSource(source) {
+  const sameUrl = store.sources.find((item) => item.url === source.url);
+  if (sameUrl) {
+    Object.assign(sameUrl, source, { id: sameUrl.id, active: true });
+    showToast("Fonte reativada/atualizada.");
+  } else {
+    store.sources.unshift(source);
+    showToast("Fonte adicionada.");
+  }
+
+  saveCollection(storageKeys.sources, store.sources);
+  state.view = "fontes";
+  setActiveTab();
+  render();
+}
+
+function removeSource(id) {
+  const source = byId(store.sources, id);
+  if (!source) return;
+
+  if (sourceIsSeed(source)) {
+    source.active = false;
+  } else {
+    store.sources = store.sources.filter((item) => item.id !== id);
+  }
+
+  saveCollection(storageKeys.sources, store.sources);
+  showToast("Fonte removida do monitoramento.");
+  render();
 }
 
 function setActiveTab() {
