@@ -38,6 +38,7 @@ assert.match(
 );
 
 const requiredBackfillIds = [
+  "chg-nfse-cnpj-indisponibilidade-2026-07-25",
   "chg-nfse-danfse-nt008-101",
   "chg-nfse-simples-emissor-nacional",
   "chg-receita-cnpj-alfanumerico-julho",
@@ -57,6 +58,14 @@ for (const doc of ["DANFSe", "RTC", "PAA", "CIOT", "Split Payment"]) {
   assert.ok(documentSet.has(doc), `documento retroativo ausente: ${doc}`);
 }
 
+const nfseCnpjOutage = changeSeed.find(
+  (change) => change.id === "chg-nfse-cnpj-indisponibilidade-2026-07-25",
+);
+assert.ok(nfseCnpjOutage, "seed deve conter indisponibilidade CNPJ NFS-e");
+assert.equal(nfseCnpjOutage.sourceId, "nfse-noticias");
+assert.equal(nfseCnpjOutage.effectiveDate, "2026-07-25");
+assert.match(nfseCnpjOutage.evidenceUrl, /^https:\/\/www\.gov\.br\/nfse\/pt-br\/noticias\//);
+
 for (const event of calendarSeed) {
   assert.match(event.date, /^\d{4}-\d{2}-\d{2}$/);
   assert.ok(sourceIds.has(event.sourceId), `evento sem fonte: ${event.id}`);
@@ -74,7 +83,7 @@ assert.ok(
 );
 assert.equal(
   rssItems[0].change.id,
-  "chg-nfse-danfse-nt008-101",
+  "chg-nfse-cnpj-indisponibilidade-2026-07-25",
   "RSS deve priorizar a mudanca mais recente por deteccao",
 );
 

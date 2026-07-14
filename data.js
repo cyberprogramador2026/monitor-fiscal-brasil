@@ -908,6 +908,38 @@ const retroactiveChanges = [
 export const changeSeed = [
   ...retroactiveChanges,
   {
+    id: "chg-nfse-cnpj-indisponibilidade-2026-07-25",
+    sourceId: "nfse-noticias",
+    title: "NFS-e alerta indisponibilidade do CNPJ em 25/07",
+    protocol: "2026/0725",
+    detectedAt: "2026-07-14T13:40:00-03:00",
+    publicationDate: "2026-07-09",
+    homologationDate: "",
+    productionDate: "2026-07-25",
+    effectiveDate: "2026-07-25",
+    area: "Desenvolvimento",
+    evidence: "nfs-e-informa-indisponibilidade-do-ambiente-do-cnpj-no-dia-25-de-julho",
+    evidenceUrl:
+      "https://www.gov.br/nfse/pt-br/noticias/nfs-e-informa-indisponibilidade-do-ambiente-do-cnpj-no-dia-25-de-julho",
+    severity: "HIGH",
+    status: "IN_REVIEW",
+    theme: "CNPJ Alfanumerico",
+    uf: null,
+    documents: ["NFS-e", "CNPJ", "CNPJ Alfanumerico", "Integracoes"],
+    confidence: 92,
+    summary:
+      "A NFS-e informou parada programada do ambiente Mainframe do CNPJ da Receita Federal em 25/07/2026, das 7h às 19h, para implantacao do CNPJ alfanumerico.",
+    impact:
+      "Consultas, integracoes e operacoes que dependem da base Mainframe do CNPJ podem ficar indisponiveis no periodo e aplicacoes nao adaptadas ao CNPJ alfanumerico podem falhar.",
+    action:
+      "Comunicar suporte e clientes impactados, validar dependencias de consulta CNPJ e revisar integracoes que ainda assumem CNPJ apenas numerico.",
+    changedExcerpt:
+      "Ambiente Mainframe do CNPJ ficara indisponivel no dia 25 de julho, das 7h às 19h, para manutencao programada ligada ao CNPJ alfanumerico.",
+    diffBefore: "Fonte de noticias NFS-e ainda sem aviso operacional vinculado ao calendario.",
+    diffAfter:
+      "Aviso operacional criado para acompanhar indisponibilidade do CNPJ em 25/07/2026 e risco de falhas em integracoes nao adaptadas.",
+  },
+  {
     id: "chg-dfe-distribuicao-104",
     sourceId: "nfe-esquemas-xml",
     title: "Distribuicao de DF-e v.1.04 publicada",

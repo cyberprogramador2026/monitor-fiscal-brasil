@@ -6,8 +6,24 @@
     <atom:link href="https://cyberprogramador2026.github.io/monitor-fiscal-brasil/rss.xml" rel="self" type="application/rss+xml" />
     <description>Mudancas fiscais detectadas pelo Monitor Fiscal Brasil, com resumo, impacto e acao sugerida.</description>
     <language>pt-BR</language>
-    <lastBuildDate>Fri, 10 Jul 2026 13:40:00 GMT</lastBuildDate>
+    <lastBuildDate>Tue, 14 Jul 2026 16:40:00 GMT</lastBuildDate>
     <ttl>30</ttl>
+    <item>
+      <title>[Alta] NFS-e alerta indisponibilidade do CNPJ em 25/07</title>
+      <link>https://cyberprogramador2026.github.io/monitor-fiscal-brasil/#avisos/chg-nfse-cnpj-indisponibilidade-2026-07-25</link>
+      <guid isPermaLink="false">monitor-fiscal-brasil:chg-nfse-cnpj-indisponibilidade-2026-07-25</guid>
+      <pubDate>Tue, 14 Jul 2026 16:40:00 GMT</pubDate>
+      <description>&lt;p&gt;A NFS-e informou parada programada do ambiente Mainframe do CNPJ da Receita Federal em 25/07/2026, das 7h às 19h, para implantacao do CNPJ alfanumerico.&lt;/p&gt;&lt;p&gt;&lt;strong&gt;Impacto:&lt;/strong&gt; Consultas, integracoes e operacoes que dependem da base Mainframe do CNPJ podem ficar indisponiveis no periodo e aplicacoes nao adaptadas ao CNPJ alfanumerico podem falhar.&lt;/p&gt;&lt;p&gt;&lt;strong&gt;Acao sugerida:&lt;/strong&gt; Comunicar suporte e clientes impactados, validar dependencias de consulta CNPJ e revisar integracoes que ainda assumem CNPJ apenas numerico.&lt;/p&gt;&lt;p&gt;&lt;strong&gt;Vigencia:&lt;/strong&gt; 2026-07-25&lt;/p&gt;&lt;p&gt;&lt;strong&gt;Status:&lt;/strong&gt; Em analise&lt;/p&gt;&lt;p&gt;&lt;strong&gt;Fonte:&lt;/strong&gt; &lt;a href=&quot;https://www.gov.br/nfse/pt-br/noticias/nfs-e-informa-indisponibilidade-do-ambiente-do-cnpj-no-dia-25-de-julho&quot;&gt;NFS-e - Noticias&lt;/a&gt;&lt;/p&gt;</description>
+      <category>Alta</category>
+      <category>Em analise</category>
+      <category>Nacional</category>
+      <category>Desenvolvimento</category>
+      <category>CNPJ Alfanumerico</category>
+      <category>NFS-e</category>
+      <category>CNPJ</category>
+      <category>CNPJ Alfanumerico</category>
+      <category>Integracoes</category>
+    </item>
     <item>
       <title>[Critica] DANFSe NT 008 v1.01 prorroga API antiga</title>
       <link>https://cyberprogramador2026.github.io/monitor-fiscal-brasil/#avisos/chg-nfse-danfse-nt008-101</link>
