@@ -124,6 +124,13 @@ h3 {
   background: rgba(245, 244, 238, 0.08);
 }
 
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
 .tab {
   min-height: 38px;
   padding: 0 14px;
@@ -135,6 +142,28 @@ h3 {
 }
 
 .tab.is-active {
+  background: #f5f4ee;
+  color: var(--ink);
+}
+
+.rss-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  min-height: 48px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(245, 244, 238, 0.08);
+  color: #f5f4ee;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.rss-link:hover,
+.rss-link:focus-visible {
   background: #f5f4ee;
   color: var(--ink);
 }
@@ -1643,6 +1672,14 @@ td span {
   .tabs {
     width: 100%;
     overflow-x: auto;
+  }
+
+  .topbar-actions {
+    width: 100%;
+  }
+
+  .rss-link {
+    flex: 0 0 auto;
   }
 
   .status-strip,

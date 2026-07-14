@@ -11,6 +11,7 @@ Aplicacao web para centralizar avisos de mudancas fiscais, calendario fiscal e f
 - Painel de fontes com seed nacional e estadual baseado na especificacao.
 - Fila de revisao para publicar ou ignorar mudancas.
 - Simulacao de verificacao manual e exportacao CSV no navegador.
+- Feed RSS em `/feed.xml` e `/rss.xml` para acompanhar avisos fiscais em leitores RSS.
 
 ## Comandos
 
@@ -22,6 +23,16 @@ npm run build
 ```
 
 O build nao depende de pacotes externos. Ele gera um artefato compativel com Sites em uma pasta temporaria do sistema, incluindo `dist/server/index.js`, `dist/client/**` e `dist/.openai/hosting.json`.
+
+## RSS
+
+O feed principal fica em `/feed.xml` e tambem responde em `/rss.xml`. Ele publica os avisos nao ignorados, ordenados pela data de deteccao, com link direto para o detalhe do aviso no monitor e referencia para a fonte oficial na descricao.
+
+Para publicar no GitHub Pages em `https://cyberprogramador2026.github.io/monitor-fiscal-brasil/`, gere os arquivos estaticos antes do commit:
+
+```bash
+npm run rss:generate
+```
 
 ## Variaveis previstas
 

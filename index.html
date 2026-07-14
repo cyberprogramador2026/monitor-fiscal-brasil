@@ -8,6 +8,12 @@
       name="description"
       content="Avisos de mudancas fiscais, calendario e fontes oficiais monitoradas."
     />
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      title="Monitor Fiscal Brasil - Avisos fiscais"
+      href="./feed.xml"
+    />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
@@ -21,17 +27,28 @@
           </div>
         </div>
 
-        <nav class="tabs" aria-label="Navegacao principal">
-          <button class="tab is-active" type="button" data-view="dashboard">
-            Dashboard
-          </button>
-          <button class="tab" type="button" data-view="avisos">Avisos</button>
-          <button class="tab" type="button" data-view="calendario">
-            Calendario
-          </button>
-          <button class="tab" type="button" data-view="fontes">Fontes</button>
-          <button class="tab" type="button" data-view="revisao">Revisao</button>
-        </nav>
+        <div class="topbar-actions">
+          <nav class="tabs" aria-label="Navegacao principal">
+            <button class="tab is-active" type="button" data-view="dashboard">
+              Dashboard
+            </button>
+            <button class="tab" type="button" data-view="avisos">Avisos</button>
+            <button class="tab" type="button" data-view="calendario">
+              Calendario
+            </button>
+            <button class="tab" type="button" data-view="fontes">Fontes</button>
+            <button class="tab" type="button" data-view="revisao">Revisao</button>
+          </nav>
+          <a
+            class="rss-link"
+            href="./feed.xml"
+            target="_blank"
+            rel="noopener"
+            title="Feed RSS"
+            aria-label="Abrir feed RSS dos avisos fiscais"
+            >RSS</a
+          >
+        </div>
       </header>
 
       <section class="status-strip" aria-label="Indicadores principais">

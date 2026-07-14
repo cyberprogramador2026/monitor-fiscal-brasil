@@ -1,0 +1,13 @@
+{
+  "name": "monitor-fiscal-brasil",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/serve.mjs",
+    "build": "node scripts/build-static.mjs",
+    "rss:generate": "node scripts/generate-rss.mjs",
+    "test": "node data.test.mjs",
+    "lint": "node --check data.js && node --check app.js && node --check rss.js && node --check scripts/build-static.mjs && node --check scripts/generate-rss.mjs && node --check scripts/serve.mjs"
+  }
+}

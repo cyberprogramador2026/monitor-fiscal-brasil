@@ -98,6 +98,36 @@ function byId(collection, id) {
   return collection.find((item) => item.id === id);
 }
 
+function changeRoute(id) {
+  return `#avisos/${encodeURIComponent(id)}`;
+}
+
+function readChangeRoute() {
+  const match = window.location.hash.match(/^#avisos\/(.+)$/);
+  if (!match) return null;
+
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return null;
+  }
+}
+
+function applyHashRoute() {
+  const id = readChangeRoute();
+  if (!id || !byId(store.changes, id)) return;
+
+  state.view = "avisos";
+  state.selectedChangeId = id;
+  state.detailDialogChangeId = id;
+}
+
+function updateChangeRoute(id) {
+  const hash = changeRoute(id);
+  if (window.location.hash === hash) return;
+  window.history.replaceState(null, "", hash);
+}
+
 function formatDateTime(value) {
   return new Intl.DateTimeFormat("pt-BR", {
     dateStyle: "short",
@@ -537,6 +567,9 @@ function bindShell() {
     button.addEventListener("click", () => {
       state.view = button.dataset.view;
       state.detailDialogChangeId = null;
+      if (window.location.hash.startsWith("#avisos/")) {
+        window.history.replaceState(null, "", window.location.pathname);
+      }
       setActiveTab();
       render();
       app.focus();
@@ -547,6 +580,13 @@ function bindShell() {
     if (event.key !== "Escape" || !state.detailDialogChangeId) return;
     state.detailDialogChangeId = null;
     render();
+  });
+
+  window.addEventListener("hashchange", () => {
+    applyHashRoute();
+    setActiveTab();
+    render();
+    app.focus();
   });
 }
 
@@ -1352,6 +1392,7 @@ function handleAction(action, id) {
       state.selectedChangeId = id;
       state.view = "avisos";
       state.detailDialogChangeId = id;
+      updateChangeRoute(id);
       setActiveTab();
       render();
     },
@@ -1592,4 +1633,6 @@ function showToast(message) {
 }
 
 bindShell();
+applyHashRoute();
+setActiveTab();
 render();
