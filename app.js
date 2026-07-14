@@ -5,7 +5,7 @@ import {
   severityLabels,
   sourceSeed,
   statusLabels,
-} from "./data.js";
+} from "./data.js?v=20260714-ops-calendar";
 
 const storageKeys = {
   changes: "monitor-fiscal:changes",
@@ -173,6 +173,83 @@ function dayDistance(value) {
   return Math.round((date - today) / 86400000);
 }
 
+const operationalStopPattern =
+  /\b(indisponibilidade|indisponivel|parada programada|manuten[cç][aã]o|interrup[cç][aã]o|fora do ar|instabilidade|suspens[aã]o)\b/i;
+
+const monthNumberByName = {
+  janeiro: "01",
+  fevereiro: "02",
+  marco: "03",
+  "março": "03",
+  abril: "04",
+  maio: "05",
+  junho: "06",
+  julho: "07",
+  agosto: "08",
+  setembro: "09",
+  outubro: "10",
+  novembro: "11",
+  dezembro: "12",
+};
+
+function changeText(change) {
+  return [
+    change.title,
+    change.summary,
+    change.impact,
+    change.action,
+    change.changedExcerpt,
+    change.theme,
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function isOperationalStop(change) {
+  return operationalStopPattern.test(changeText(change));
+}
+
+function yearForChange(change) {
+  const reference =
+    change.effectiveDate || change.productionDate || change.publicationDate || change.detectedAt || "2026";
+  return String(reference).slice(0, 4);
+}
+
+function normalizeDateParts(year, month, day) {
+  const yyyy = String(year).length === 2 ? `20${year}` : String(year);
+  const mm = String(month).padStart(2, "0");
+  const dd = String(day).padStart(2, "0");
+  const iso = `${yyyy}-${mm}-${dd}`;
+  const date = new Date(`${iso}T12:00:00-03:00`);
+  return Number.isNaN(date.getTime()) ? "" : iso;
+}
+
+function dateFromOperationalText(change) {
+  const text = changeText(change);
+  const numeric = text.match(/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/);
+  if (numeric) {
+    return normalizeDateParts(numeric[3] || yearForChange(change), numeric[2], numeric[1]);
+  }
+
+  const namedMonth = text
+    .toLowerCase()
+    .match(/\b(?:dia\s+)?(\d{1,2})\s+de\s+(janeiro|fevereiro|mar[cç]o|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)\b/);
+  if (!namedMonth) return "";
+
+  const monthKey = namedMonth[2].replace("ç", "c");
+  return normalizeDateParts(yearForChange(change), monthNumberByName[monthKey], namedMonth[1]);
+}
+
+function calendarDateForChange(change) {
+  if (change.effectiveDate) return change.effectiveDate;
+  if (!isOperationalStop(change)) return "";
+  return change.productionDate || dateFromOperationalText(change);
+}
+
+function calendarKindLabel(change) {
+  return isOperationalStop(change) ? "Indisponibilidade" : "Vigencia";
+}
+
 function offsetLabel(value) {
   if (value === 0) return "Hoje";
   return value > 0 ? `+${value}d` : `${value}d`;
@@ -191,7 +268,7 @@ function enrichedChange(change) {
     protocol: change.protocol ?? derivedProtocol,
     publicationDate: baseDate,
     homologationDate: change.homologationDate ?? addDays(baseDate, 20),
-    productionDate: change.productionDate ?? addDays(baseDate, 42),
+    productionDate: change.productionDate ?? (isOperationalStop(change) ? "" : addDays(baseDate, 42)),
     effectiveDate: change.effectiveDate ?? "",
     evidenceUrl: change.evidenceUrl ?? "",
     area:
@@ -1153,16 +1230,20 @@ function renderCalendario() {
 function enrichedCalendarEvents() {
   return store.changes
     .map(enrichedChange)
-    .filter((change) => change.status !== "IGNORED" && change.effectiveDate)
+    .map((change) => ({ change, date: calendarDateForChange(change) }))
+    .filter(({ change, date }) => change.status !== "IGNORED" && date)
     .map((change) => {
+      const date = change.date;
+      change = change.change;
       const source = sourceFor(change);
       const displayTitle = calendarEventTitle(change, source);
       const evidence = change.evidence || (change.evidenceUrl ? "Arquivo oficial disponivel" : "Sem evidencia registrada");
+      const kindLabel = calendarKindLabel(change);
       return {
         id: `cal-${change.id}`,
         title: change.title,
         displayTitle,
-        date: change.effectiveDate,
+        date,
         severity: change.severity,
         status: change.status,
         uf: change.uf,
@@ -1176,8 +1257,9 @@ function enrichedCalendarEvents() {
         evidence: compactText(evidence, 110),
         diffBefore: compactText(change.diffBefore, 110),
         diffAfter: compactText(change.diffAfter, 110),
-        effectiveDate: change.effectiveDate,
-        ariaLabel: `${displayTitle}. ${change.summary}. Trecho: ${change.changedExcerpt}. Evidencia: ${evidence}. Vigencia: ${formatDate(change.effectiveDate)}.`,
+        effectiveDate: date,
+        kindLabel,
+        ariaLabel: `${displayTitle}. ${change.summary}. Trecho: ${change.changedExcerpt}. Evidencia: ${evidence}. ${kindLabel}: ${formatDate(date)}.`,
       };
     });
 }
@@ -1195,7 +1277,7 @@ function renderCalendarTooltip(event) {
       <strong>${escapeHtml(event.title)}</strong>
       <span><b>Fonte:</b> ${escapeHtml(event.sourceName)}</span>
       <span><b>Documento:</b> ${escapeHtml(event.documents.join(", "))}</span>
-      <span><b>Vigencia:</b> ${formatDate(event.effectiveDate)}</span>
+      <span><b>${escapeHtml(event.kindLabel)}:</b> ${formatDate(event.effectiveDate)}</span>
       <span><b>Resumo:</b> ${escapeHtml(event.summary)}</span>
       <span><b>Trecho:</b> ${escapeHtml(event.changedExcerpt)}</span>
       <span><b>Antes:</b> ${escapeHtml(event.diffBefore)}</span>

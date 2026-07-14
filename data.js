@@ -1288,14 +1288,92 @@ const legacyCalendarSeed = [
   },
 ];
 
+const operationalStopPattern =
+  /\b(indisponibilidade|indisponivel|parada programada|manuten[cç][aã]o|interrup[cç][aã]o|fora do ar|instabilidade|suspens[aã]o)\b/i;
+
+const monthNumberByName = {
+  janeiro: "01",
+  fevereiro: "02",
+  marco: "03",
+  "março": "03",
+  abril: "04",
+  maio: "05",
+  junho: "06",
+  julho: "07",
+  agosto: "08",
+  setembro: "09",
+  outubro: "10",
+  novembro: "11",
+  dezembro: "12",
+};
+
+function changeText(change) {
+  return [
+    change.title,
+    change.summary,
+    change.impact,
+    change.action,
+    change.changedExcerpt,
+    change.theme,
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function isOperationalStop(change) {
+  return operationalStopPattern.test(changeText(change));
+}
+
+function yearForChange(change) {
+  const reference =
+    change.effectiveDate || change.productionDate || change.publicationDate || change.detectedAt || "2026";
+  return String(reference).slice(0, 4);
+}
+
+function normalizeDateParts(year, month, day) {
+  const yyyy = String(year).length === 2 ? `20${year}` : String(year);
+  const mm = String(month).padStart(2, "0");
+  const dd = String(day).padStart(2, "0");
+  const iso = `${yyyy}-${mm}-${dd}`;
+  const date = new Date(`${iso}T12:00:00-03:00`);
+  return Number.isNaN(date.getTime()) ? "" : iso;
+}
+
+function dateFromOperationalText(change) {
+  const text = changeText(change);
+  const numeric = text.match(/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/);
+  if (numeric) {
+    return normalizeDateParts(numeric[3] || yearForChange(change), numeric[2], numeric[1]);
+  }
+
+  const namedMonth = text
+    .toLowerCase()
+    .match(/\b(?:dia\s+)?(\d{1,2})\s+de\s+(janeiro|fevereiro|mar[cç]o|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)\b/);
+  if (!namedMonth) return "";
+
+  const monthKey = namedMonth[2].replace("ç", "c");
+  return normalizeDateParts(yearForChange(change), monthNumberByName[monthKey], namedMonth[1]);
+}
+
+function calendarDateForChange(change) {
+  if (change.effectiveDate) return change.effectiveDate;
+  if (!isOperationalStop(change)) return "";
+  return change.productionDate || dateFromOperationalText(change);
+}
+
+function calendarTitleForChange(change) {
+  return `${isOperationalStop(change) ? "Indisponibilidade" : "Vigencia"}: ${change.title}`;
+}
+
 export const calendarSeed = changeSeed
-  .filter((change) => change.status !== "IGNORED" && change.effectiveDate)
-  .map((change) => ({
+  .map((change) => ({ change, date: calendarDateForChange(change) }))
+  .filter(({ change, date }) => change.status !== "IGNORED" && date)
+  .map(({ change, date }) => ({
     id: `cal-${change.id}`,
-    title: `Vigencia: ${change.title}`,
-    date: change.effectiveDate,
+    title: calendarTitleForChange(change),
+    date,
     severity: change.severity,
-    status: change.effectiveDate < "2026-07-10" ? "IN_PROGRESS" : "PLANNED",
+    status: date < "2026-07-10" ? "IN_PROGRESS" : "PLANNED",
     uf: change.uf,
     documents: change.documents,
     sourceId: change.sourceId,

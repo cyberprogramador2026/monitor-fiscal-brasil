@@ -71,9 +71,19 @@ for (const event of calendarSeed) {
   assert.ok(sourceIds.has(event.sourceId), `evento sem fonte: ${event.id}`);
   assert.ok(changeIds.has(event.changeId), `evento sem mudanca vinculada: ${event.id}`);
   const change = changeSeed.find((item) => item.id === event.changeId);
-  assert.equal(event.date, change.effectiveDate, `evento fora da vigencia: ${event.id}`);
+  assert.ok(
+    event.date === change.effectiveDate || event.date === change.productionDate,
+    `evento fora da data operacional: ${event.id}`,
+  );
   assert.doesNotMatch(event.title, /^Vigencia: (triagem|validar|analise|sincronizar|revisao)\b/i);
 }
+
+const nfseCnpjOutageEvent = calendarSeed.find(
+  (event) => event.changeId === "chg-nfse-cnpj-indisponibilidade-2026-07-25",
+);
+assert.ok(nfseCnpjOutageEvent, "calendario deve conter indisponibilidade CNPJ NFS-e");
+assert.equal(nfseCnpjOutageEvent.date, "2026-07-25");
+assert.match(nfseCnpjOutageEvent.title, /^Indisponibilidade:/);
 
 const rssItems = getRssItems();
 assert.ok(rssItems.length > 0, "RSS deve conter avisos");
