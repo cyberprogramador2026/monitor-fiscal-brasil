@@ -20,6 +20,7 @@ npm run dev
 npm run lint
 npm test
 npm run build
+npm run analyze:pdfs
 ```
 
 O build nao depende de pacotes externos. Ele gera um artefato compativel com Sites em uma pasta temporaria do sistema, incluindo `dist/server/index.js`, `dist/client/**` e `dist/.openai/hosting.json`.
@@ -33,6 +34,21 @@ Para publicar no GitHub Pages em `https://cyberprogramador2026.github.io/monitor
 ```bash
 npm run rss:generate
 ```
+
+## Analise de PDFs
+
+O comando `npm run analyze:pdfs` baixa PDFs tecnicos encontrados nas fontes monitoradas e nos links de evidencia ja cadastrados, extrai texto com `pdfplumber` e gera candidatos de prazos e mudancas em Markdown e JSON.
+
+Por padrao, a analise usa uma pasta temporaria do sistema e nao altera os dados publicados do monitor. Ajustes uteis:
+
+```bash
+PDF_ANALYZER_MAX_PDFS=10 npm run analyze:pdfs
+PDF_ANALYZER_MAX_PAGES=80 npm run analyze:pdfs
+PDF_ANALYZER_OUTPUT_DIR=./output/pdf npm run analyze:pdfs
+PDF_ANALYZER_PYTHON=/caminho/para/python npm run analyze:pdfs
+```
+
+O relatorio aponta datas de homologacao, producao, vigencia, obrigatoriedade, indisponibilidade e trechos com alteracoes de leiaute, schemas, campos, regras de validacao e rejeicoes. Esses itens devem ser revisados antes de virar aviso publicado.
 
 ## Variaveis previstas
 

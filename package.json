@@ -7,7 +7,8 @@
     "dev": "node scripts/serve.mjs",
     "build": "node scripts/build-static.mjs",
     "rss:generate": "node scripts/generate-rss.mjs",
+    "analyze:pdfs": "node scripts/analyze-technical-notes.mjs",
     "test": "node data.test.mjs",
-    "lint": "node --check data.js && node --check app.js && node --check rss.js && node --check scripts/build-static.mjs && node --check scripts/generate-rss.mjs && node --check scripts/serve.mjs"
+    "lint": "node --check data.js && node --check app.js && node --check rss.js && node --check scripts/build-static.mjs && node --check scripts/generate-rss.mjs && node --check scripts/analyze-technical-notes.mjs && node --check scripts/serve.mjs && python -c \"import ast,pathlib; ast.parse(pathlib.Path('scripts/pdf_text_extract.py').read_text(encoding='utf-8'))\""
   }
 }
