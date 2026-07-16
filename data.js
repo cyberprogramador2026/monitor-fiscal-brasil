@@ -12,6 +12,36 @@ export const statusLabels = {
   IGNORED: "Ignorado",
 };
 
+export const legalStatusLabels = {
+  PUBLISHED: "Publicado",
+  IN_ANALYSIS: "Em analise",
+  WAITING_TECHNICAL_REGULATION: "Aguardando regulamentacao tecnica",
+  WAITING_TECHNICAL_NOTE: "Aguardando Nota Tecnica",
+  WAITING_SCHEMA: "Aguardando schema",
+  WAITING_HOMOLOGATION: "Aguardando ambiente de homologacao",
+  EFFECTIVE: "Vigente",
+  FUTURE_EFFECTIVE: "Vigencia futura",
+  POSTPONED: "Adiado",
+  RECTIFIED: "Retificado",
+  CHANGED: "Alterado",
+  REVOKED: "Revogado",
+};
+
+export const documentTypeLabels = {
+  TECHNICAL_NOTE: "Nota Tecnica",
+  TECHNICAL_REPORT: "Informe Tecnico",
+  SCHEMA: "Schema",
+  AJUSTE_SINIEF: "Ajuste SINIEF",
+  ATO_COTEPE_ICMS: "Ato COTEPE/ICMS",
+  CONVENIO_ICMS: "Convenio ICMS",
+  PROTOCOLO_ICMS: "Protocolo ICMS",
+  DESPACHO_CONFAZ: "Despacho CONFAZ",
+  RETIFICATION: "Retificacao",
+  REPUBLICATION: "Republicacao",
+  NEWS: "Comunicado",
+  OTHER: "Outro",
+};
+
 export const frequencyLabels = {
   HOURLY: "Horaria",
   DAILY: "Diaria",
@@ -35,6 +65,10 @@ function source({
   severity = "MEDIUM",
   mode = "HTML_TEXT",
   checked = "2026-07-07T07:00:00-03:00",
+  documentType = "OTHER",
+  year = null,
+  monitorScope = "PAGE",
+  urlCandidates = [],
 }) {
   return {
     id,
@@ -47,11 +81,66 @@ function source({
     frequency,
     severity,
     mode,
+    documentType,
+    year,
+    monitorScope,
+    urlCandidates,
     active: true,
     lastCheckedAt: checked,
     lastHash: hashFrom(id),
   };
 }
+
+const confazAnnualRows = [
+  {
+    id: "confaz-ajustes-sinief-2025",
+    name: "CONFAZ - Ajustes SINIEF 2025",
+    documents: ["DF-e", "NF-e", "NFC-e", "CT-e", "MDF-e", "NFS-e", "NFCom", "NF3e", "BP-e"],
+    url: "https://www.confaz.fazenda.gov.br/legislacao/ajustes/2025",
+    documentType: "AJUSTE_SINIEF",
+    year: 2025,
+  },
+  {
+    id: "confaz-ajustes-sinief-2026",
+    name: "CONFAZ - Ajustes SINIEF 2026",
+    documents: ["DF-e", "NF-e", "NFC-e", "CT-e", "MDF-e", "NFS-e", "NFCom", "NF3e", "BP-e"],
+    url: "https://www.confaz.fazenda.gov.br/legislacao/ajustes/2026/2026",
+    urlCandidates: [
+      "https://www.confaz.fazenda.gov.br/legislacao/ajustes/2026",
+      "https://www.confaz.fazenda.gov.br/legislacao/ajustes/2026/2026",
+    ],
+    documentType: "AJUSTE_SINIEF",
+    year: 2026,
+  },
+  {
+    id: "confaz-atos-cotepe-2025",
+    name: "CONFAZ - Atos COTEPE/ICMS 2025",
+    documents: ["ICMS", "EFD", "DF-e", "SPED Fiscal"],
+    url: "https://www.confaz.fazenda.gov.br/legislacao/atos/2025",
+    documentType: "ATO_COTEPE_ICMS",
+    year: 2025,
+  },
+  {
+    id: "confaz-atos-cotepe-2026",
+    name: "CONFAZ - Atos COTEPE/ICMS 2026",
+    documents: ["ICMS", "EFD", "DF-e", "SPED Fiscal"],
+    url: "https://www.confaz.fazenda.gov.br/legislacao/atos/2026",
+    documentType: "ATO_COTEPE_ICMS",
+    year: 2026,
+  },
+];
+
+const confazAnnualSources = confazAnnualRows.map((item) =>
+  source({
+    agency: "CONFAZ",
+    category: "NACIONAL",
+    frequency: "DAILY",
+    severity: "HIGH",
+    monitorScope: "ANNUAL_LEGAL_PAGE",
+    checked: "2026-07-16T08:00:00-03:00",
+    ...item,
+  }),
+);
 
 const nationalSources = [
   source({
@@ -212,8 +301,10 @@ const nationalSources = [
     category: "NACIONAL",
     documents: ["DF-e"],
     url: "https://www.confaz.fazenda.gov.br/legislacao/ajustes",
+    documentType: "AJUSTE_SINIEF",
     severity: "HIGH",
   }),
+  ...confazAnnualSources,
   source({
     id: "confaz-convenios-icms",
     name: "CONFAZ - Convenios ICMS",
@@ -221,6 +312,7 @@ const nationalSources = [
     category: "NACIONAL",
     documents: ["ICMS", "Beneficios"],
     url: "https://www.confaz.fazenda.gov.br/legislacao/convenios",
+    documentType: "CONVENIO_ICMS",
   }),
   source({
     id: "sped-portal",
@@ -1198,8 +1290,200 @@ const acbrAugust3CalendarChanges = [
   },
 ];
 
+const confazLegalChanges = [
+  {
+    id: "chg-confaz-ajuste-sinief-11-25-nfce-cnpj-revogado",
+    sourceId: "confaz-ajustes-sinief-2025",
+    title: "Ajuste SINIEF 11/25 restringe NFC-e com destinatario CNPJ",
+    protocol: "AJUSTE/11-25",
+    documentType: "AJUSTE_SINIEF",
+    documentNumber: "11/25",
+    documentYear: 2025,
+    detectedAt: "2026-07-16T08:10:00-03:00",
+    publicationDate: "2025-04-30",
+    douPublicationDate: "2025-04-30",
+    homologationDate: "",
+    productionDate: "",
+    effectiveDate: "2026-04-09",
+    effectsDate: "2026-05-04",
+    originalEffectiveDate: "2025-11-03",
+    updatedEffectiveDate: "2026-05-04",
+    area: "Produto",
+    evidence: "AJUSTE SINIEF 11/25",
+    evidenceUrl: "https://www.confaz.fazenda.gov.br/legislacao/ajustes/2025/AJ011_25",
+    severity: "HIGH",
+    status: "IN_REVIEW",
+    legalStatus: "REVOKED",
+    theme: "Ajuste SINIEF",
+    subjectMain: "Restricao da NFC-e para destinatario identificado por CNPJ",
+    uf: null,
+    documents: ["NFC-e", "NF-e", "DF-e", "Destinatario", "CNPJ"],
+    products: ["Gerencie Aqui", "SIEM", "NF-e", "NFC-e"],
+    relatedDocuments: ["Ajuste SINIEF 19/16", "Ajuste SINIEF 30/25", "Ajuste SINIEF 43/25", "Ajuste SINIEF 12/26"],
+    originalDocument: "Ajuste SINIEF 19/16",
+    changedBy: ["Ajuste SINIEF 30/25", "Ajuste SINIEF 43/25"],
+    laterAlteredBy: ["Ajuste SINIEF 12/26"],
+    hasSubsequentChange: true,
+    hasTechnicalNote: false,
+    technicalNoteRelated: "Aguardando identificacao ou vinculacao",
+    normativeBeforeTechnicalNote: true,
+    alertFlag: "Alteracao normativa identificada antes da Nota Tecnica",
+    confidence: 95,
+    summary:
+      "O Ajuste SINIEF 11/25 criou regra para usar NF-e modelo 55 quando o destinatario precisar ser identificado por CNPJ, em vez de NFC-e modelo 65. O ato foi alterado pelo Ajuste SINIEF 43/25 e depois revogado pelo Ajuste SINIEF 12/26.",
+    impact:
+      "Impacto alto para regras de emissao NFC-e/NF-e, validacao de destinatario, parametrizacao fiscal e orientacao de suporte, mesmo com a revogacao posterior preservada no historico.",
+    action:
+      "Manter a cadeia 11/25 -> 43/25 -> 12/26 vinculada, confirmar se existe NT correspondente e registrar que a analise normativa antecedeu a implementacao tecnica.",
+    changedExcerpt:
+      "Nas operacoes com mercadorias em que o destinatario precise ser identificado pelo CNPJ, devera ser utilizada a NF-e, modelo 55. O ato foi posteriormente revogado pelo Ajuste SINIEF 12/26, com efeitos a partir de 09/04/2026.",
+    diffBefore:
+      "Clausula terceira do Ajuste SINIEF 11/25, apos o Ajuste SINIEF 43/25, produzia efeitos a partir de 04/05/2026.",
+    diffAfter:
+      "Ajuste SINIEF 12/26 revogou o Ajuste SINIEF 11/25 com efeitos a partir de 09/04/2026; historico de redacoes anteriores permanece vinculado.",
+  },
+  {
+    id: "chg-confaz-ajuste-sinief-43-25-altera-efeitos-11-25",
+    sourceId: "confaz-ajustes-sinief-2025",
+    title: "Ajuste SINIEF 43/25 altera producao de efeitos do Ajuste 11/25",
+    protocol: "AJUSTE/43-25",
+    documentType: "AJUSTE_SINIEF",
+    documentNumber: "43/25",
+    documentYear: 2025,
+    detectedAt: "2026-07-16T08:05:00-03:00",
+    publicationDate: "2025-12-09",
+    douPublicationDate: "2025-12-09",
+    homologationDate: "",
+    productionDate: "",
+    effectiveDate: "2025-12-09",
+    effectsDate: "2026-05-04",
+    area: "Fiscal",
+    evidence: "AJUSTE SINIEF 43/25",
+    evidenceUrl: "https://www.confaz.fazenda.gov.br/legislacao/ajustes/2025/AJ043_25",
+    severity: "HIGH",
+    status: "IN_REVIEW",
+    legalStatus: "CHANGED",
+    theme: "Alteracao de vigencia",
+    subjectMain: "Nova redacao de clausula com producao de efeitos futura",
+    uf: null,
+    documents: ["NFC-e", "NF-e", "DF-e", "CNPJ"],
+    products: ["Gerencie Aqui", "SIEM", "NF-e", "NFC-e"],
+    relatedDocuments: ["Ajuste SINIEF 11/25", "Ajuste SINIEF 12/26"],
+    originalDocument: "Ajuste SINIEF 11/25",
+    altersDocuments: ["Ajuste SINIEF 11/25"],
+    hasSubsequentChange: true,
+    hasTechnicalNote: false,
+    technicalNoteRelated: "Aguardando identificacao ou vinculacao",
+    normativeBeforeTechnicalNote: true,
+    alertFlag: "Alteracao normativa identificada antes da Nota Tecnica",
+    confidence: 93,
+    summary:
+      "O Ajuste SINIEF 43/25 deu nova redacao a clausula terceira do Ajuste SINIEF 11/25, deslocando a producao de efeitos para 04/05/2026.",
+    impact:
+      "A alteracao muda a janela de preparacao de produto e desenvolvimento para regra de emissao envolvendo NFC-e, NF-e e destinatario CNPJ.",
+    action:
+      "Registrar a mudanca de vigencia separadamente da publicacao original e checar se a regra foi absorvida por Nota Tecnica antes de entrar em backlog tecnico.",
+    changedExcerpt:
+      "A clausula terceira passa a produzir efeitos a partir de 4 de maio de 2026.",
+    diffBefore: "Redacao anterior apontava producao de efeitos a partir de 05/01/2026.",
+    diffAfter: "Nova redacao do Ajuste SINIEF 43/25 aponta efeitos a partir de 04/05/2026.",
+  },
+  {
+    id: "chg-confaz-ajuste-sinief-12-26-revoga-11-25",
+    sourceId: "confaz-ajustes-sinief-2026",
+    title: "Ajuste SINIEF 12/26 revoga regra NFC-e com destinatario CNPJ",
+    protocol: "AJUSTE/12-26",
+    documentType: "AJUSTE_SINIEF",
+    documentNumber: "12/26",
+    documentYear: 2026,
+    detectedAt: "2026-07-16T08:00:00-03:00",
+    publicationDate: "2026-04-09",
+    douPublicationDate: "2026-04-09",
+    homologationDate: "",
+    productionDate: "",
+    effectiveDate: "2026-04-09",
+    effectsDate: "2026-04-09",
+    area: "Produto",
+    evidence: "AJUSTE SINIEF 12/26",
+    evidenceUrl: "https://www.confaz.fazenda.gov.br/legislacao/ajustes/2026/AJ012_26",
+    severity: "HIGH",
+    status: "IN_REVIEW",
+    legalStatus: "REVOKED",
+    theme: "Revogacao",
+    subjectMain: "Revogacao de alteracao normativa de NFC-e",
+    uf: null,
+    documents: ["NFC-e", "NF-e", "DF-e", "Destinatario", "CNPJ"],
+    products: ["Gerencie Aqui", "SIEM", "NF-e", "NFC-e"],
+    relatedDocuments: ["Ajuste SINIEF 11/25", "Ajuste SINIEF 43/25"],
+    originalDocument: "Ajuste SINIEF 11/25",
+    altersDocuments: ["Ajuste SINIEF 11/25"],
+    hasSubsequentChange: false,
+    hasTechnicalNote: false,
+    technicalNoteRelated: "Nao localizada",
+    normativeBeforeTechnicalNote: true,
+    alertFlag: "Alteracao normativa identificada antes da Nota Tecnica",
+    confidence: 95,
+    summary:
+      "O Ajuste SINIEF 12/26 revogou o Ajuste SINIEF 11/25, que alterava a disciplina da NFC-e modelo 65 para casos com destinatario CNPJ.",
+    impact:
+      "Remove obrigacao normativa antes da data de efeitos entao prevista, evitando desenvolvimento indevido, mas exige comunicacao clara para Produto, Fiscal, Desenvolvimento e Suporte.",
+    action:
+      "Marcar a linha do tempo como revogada, congelar qualquer tarefa tecnica derivada do 11/25 e manter evidencia oficial para auditoria.",
+    changedExcerpt:
+      "O Ajuste SINIEF 11/25 fica revogado; o Ajuste SINIEF 12/26 entra em vigor na data da publicacao no DOU.",
+    diffBefore: "Acompanhamento considerava efeitos futuros do Ajuste SINIEF 11/25 a partir de 04/05/2026.",
+    diffAfter: "Revogacao publicada em 09/04/2026 elimina a entrada em vigor operacional daquela regra.",
+  },
+  {
+    id: "chg-confaz-ato-cotepe-69-26-efd-layout-2027",
+    sourceId: "confaz-atos-cotepe-2026",
+    title: "Ato COTEPE/ICMS 69/26 atualiza leiaute EFD para 2027",
+    protocol: "COTEPE/69-26",
+    documentType: "ATO_COTEPE_ICMS",
+    documentNumber: "69/26",
+    documentYear: 2026,
+    detectedAt: "2026-07-16T07:55:00-03:00",
+    publicationDate: "2026-06-24",
+    douPublicationDate: "2026-06-24",
+    homologationDate: "",
+    productionDate: "2027-01-01",
+    effectiveDate: "2027-01-01",
+    effectsDate: "2027-01-01",
+    area: "Fiscal",
+    evidence: "ATO COTEPE/ICMS 69/26",
+    evidenceUrl: "https://www.confaz.fazenda.gov.br/legislacao/atos/2026/ato-cotepe-icms-69-26",
+    severity: "HIGH",
+    status: "IN_REVIEW",
+    legalStatus: "FUTURE_EFFECTIVE",
+    theme: "Leiaute EFD",
+    subjectMain: "Especificacoes tecnicas da Escrituracao Fiscal Digital",
+    uf: null,
+    documents: ["EFD", "SPED Fiscal", "ICMS", "Leiaute", "Regra de validacao"],
+    products: ["EFD", "Fiscal", "Integracoes"],
+    relatedDocuments: ["Ato COTEPE/ICMS 44/18", "Nota Tecnica EFD ICMS IPI 2026.001 v1.0", "Guia Pratico EFD ICMS/IPI 3.2.3"],
+    originalDocument: "Ato COTEPE/ICMS 44/18",
+    altersDocuments: ["Ato COTEPE/ICMS 44/18"],
+    hasSubsequentChange: false,
+    hasTechnicalNote: true,
+    technicalNoteRelated: "Nota Tecnica EFD ICMS IPI 2026.001 v1.0",
+    normativeBeforeTechnicalNote: false,
+    confidence: 92,
+    summary:
+      "O Ato COTEPE/ICMS 69/26 altera o Ato COTEPE/ICMS 44/18 e institui referencia ao Manual de Orientacao do Leiaute da EFD ICMS/IPI com efeitos a partir de 01/01/2027.",
+    impact:
+      "Pode exigir analise de campos, validacoes, MD5 de artefatos oficiais, versao do Guia Pratico e compatibilidade dos arquivos EFD gerados pelos produtos.",
+    action:
+      "Relacionar o ato com a NT EFD ICMS IPI 2026.001, revisar o Guia Pratico 3.2.3 e planejar validacao de arquivos antes de janeiro de 2027.",
+    changedExcerpt:
+      "Fica instituido o Manual de Orientacao do Leiaute da EFD ICMS IPI conforme alteracoes da Nota Tecnica EFD ICMS IPI 2026.001 v1.0, produzindo efeitos a partir de 01/01/2027.",
+    diffBefore: "Ato COTEPE/ICMS 44/18 sem referencia ao leiaute EFD atualizado pela NT 2026.001 v1.0.",
+    diffAfter: "Ato COTEPE/ICMS 69/26 incorpora novo manual, chaves MD5 oficiais e efeitos em 01/01/2027.",
+  },
+];
+
 export const changeSeed = [
   ...retroactiveChanges,
+  ...confazLegalChanges,
   {
     id: "chg-nfse-cnpj-indisponibilidade-2026-07-25",
     sourceId: "nfse-noticias",
@@ -1666,6 +1950,9 @@ function calendarKindLabel(change) {
   if (isOperationalStop(change)) return "Indisponibilidade";
 
   const text = normalizedChangeText(change);
+  if (text.includes("revoga")) return "Revogacao";
+  if (text.includes("retifica")) return "Retificacao";
+  if (text.includes("ato cotepe")) return "Prazo COTEPE";
   if (text.includes("homologacao")) return "Homologacao";
   if (text.includes("producao")) return "Producao";
   if (text.includes("obrigatoriedade") || text.includes("obrigatorio")) return "Obrigatoriedade";

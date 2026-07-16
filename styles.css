@@ -284,7 +284,7 @@ h3 {
 
 .filters {
   display: grid;
-  grid-template-columns: minmax(220px, 1.4fr) repeat(4, minmax(150px, 1fr));
+  grid-template-columns: minmax(220px, 1.4fr) repeat(auto-fit, minmax(145px, 1fr));
   gap: 10px;
   margin-bottom: 14px;
   padding: 14px;
@@ -567,6 +567,20 @@ select {
   color: #6f6f6f;
 }
 
+.legal-chip {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  min-height: 23px;
+  padding: 0 8px;
+  border: 1px solid #b8c8c0;
+  border-radius: 999px;
+  background: #f4f8f5;
+  color: #40534a;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
 .detail-panel {
   position: sticky;
   top: 12px;
@@ -666,7 +680,7 @@ select {
 
 .milestone-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
   gap: 8px;
 }
 
@@ -701,6 +715,69 @@ select {
 .text-block p {
   margin-bottom: 0;
   color: #33443d;
+}
+
+.normative-alert {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid #e7b966;
+  border-left: 4px solid var(--amber);
+  border-radius: 8px;
+  background: #fff8e8;
+}
+
+.normative-alert strong {
+  color: #6f4300;
+  font-size: 0.9rem;
+}
+
+.normative-alert span {
+  color: #6b5b39;
+  font-weight: 700;
+}
+
+.legal-relationship {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.legal-relationship h3 {
+  margin: 0 0 10px;
+  font-size: 0.92rem;
+}
+
+.legal-relationship dl {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.legal-relationship div {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.28fr) minmax(0, 1fr);
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #edf1ee;
+}
+
+.legal-relationship div:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.legal-relationship dt {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.legal-relationship dd {
+  margin: 0;
+  color: #33443d;
+  font-weight: 750;
 }
 
 .diff-grid {

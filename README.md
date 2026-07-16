@@ -12,6 +12,7 @@ Aplicacao web para centralizar avisos de mudancas fiscais, calendario fiscal e f
 - Fila de revisao para publicar ou ignorar mudancas.
 - Simulacao de verificacao manual e exportacao CSV no navegador.
 - Feed RSS em `/feed.xml` e `/rss.xml` para acompanhar avisos fiscais em leitores RSS.
+- Fontes anuais CONFAZ para Ajustes SINIEF e Atos COTEPE/ICMS, com situacao legal, produtos, vinculos e sinalizacao de ato sem Nota Tecnica.
 
 ## Comandos
 
@@ -21,6 +22,7 @@ npm run lint
 npm test
 npm run build
 npm run analyze:pdfs
+npm run monitor:confaz
 ```
 
 O build nao depende de pacotes externos. Ele gera um artefato compativel com Sites em uma pasta temporaria do sistema, incluindo `dist/server/index.js`, `dist/client/**` e `dist/.openai/hosting.json`.
@@ -49,6 +51,20 @@ PDF_ANALYZER_PYTHON=/caminho/para/python npm run analyze:pdfs
 ```
 
 O relatorio aponta datas de homologacao, producao, vigencia, obrigatoriedade, indisponibilidade e trechos com alteracoes de leiaute, schemas, campos, regras de validacao e rejeicoes. Esses itens devem ser revisados antes de virar aviso publicado.
+
+## Monitoramento CONFAZ
+
+O comando `npm run monitor:confaz` consulta as paginas anuais de Ajustes SINIEF e Atos COTEPE/ICMS do CONFAZ para o ano anterior, atual e seguinte quando a pagina existir. Ele identifica publicacoes, retificacoes, republicacoes, revogacoes, alteracoes de vigencia, documentos afetados, produtos impactados, relacao com Nota Tecnica e alerta de alteracao normativa sem NT.
+
+Por padrao, o relatorio e os snapshots ficam em uma pasta temporaria. Ajustes uteis:
+
+```bash
+CONFAZ_MONITOR_YEARS=2025,2026 npm run monitor:confaz
+CONFAZ_MONITOR_OUTPUT_DIR=./output/confaz npm run monitor:confaz
+CONFAZ_MONITOR_MAX_DETAILS=200 npm run monitor:confaz
+```
+
+Observacao operacional: o portal CONFAZ usa `/legislacao/atos/{ano}` para Atos COTEPE/ICMS. Para Ajustes SINIEF, o coletor tenta `/legislacao/ajustes/{ano}` e tambem a variante publicada em 2026, `/legislacao/ajustes/{ano}/{ano}`.
 
 ## Variaveis previstas
 

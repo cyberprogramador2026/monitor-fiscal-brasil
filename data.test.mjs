@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
-import { calendarSeed, changeSeed, sourceSeed } from "./data.js";
+import {
+  calendarSeed,
+  changeSeed,
+  documentTypeLabels,
+  legalStatusLabels,
+  sourceSeed,
+} from "./data.js";
 import { createRssFeed, getRssItems } from "./rss.js";
+import { confazAnnualUrlCandidates, extractConfazSummaryEntries } from "./scripts/monitor-confaz.mjs";
 
 const stateSources = sourceSeed.filter((source) => source.category === "ESTADUAL");
 const nationalSources = sourceSeed.filter((source) => source.category === "NACIONAL");
@@ -17,7 +24,13 @@ assert.ok(sourceIds.has("acbr-prazos-sefaz"), "seed deve conter calendario ACBr 
 assert.ok(sourceIds.has("nfcom-svrs-documentos"), "seed deve conter documentos NFCom SVRS");
 assert.ok(sourceIds.has("bpe-svrs-documentos"), "seed deve conter documentos BP-e SVRS");
 assert.ok(sourceIds.has("sefaz-sp-cbenef"), "seed deve conter cBenef SP");
+assert.ok(sourceIds.has("confaz-ajustes-sinief-2025"), "seed deve conter Ajustes SINIEF 2025");
+assert.ok(sourceIds.has("confaz-ajustes-sinief-2026"), "seed deve conter Ajustes SINIEF 2026");
+assert.ok(sourceIds.has("confaz-atos-cotepe-2025"), "seed deve conter Atos COTEPE 2025");
+assert.ok(sourceIds.has("confaz-atos-cotepe-2026"), "seed deve conter Atos COTEPE 2026");
 assert.ok(changeSeed.length >= 20, "seed deve conter backfill retroativo nacional");
+assert.equal(documentTypeLabels.AJUSTE_SINIEF, "Ajuste SINIEF");
+assert.equal(legalStatusLabels.REVOKED, "Revogado");
 
 for (const change of changeSeed) {
   assert.ok(sourceIds.has(change.sourceId), `mudanca sem fonte: ${change.id}`);
@@ -57,6 +70,10 @@ const requiredBackfillIds = [
   "chg-acbr-danfe-simplificado-nt-2026-003-producao-2026-08-03",
   "chg-acbr-nt-2026-002-rtc-cte-nfcom-nf3e-bpe-producao-2026-08-03",
   "chg-acbr-nt-2026-002-rtc-cte-nfcom-nf3e-bpe-homologacao-2026-08-03",
+  "chg-confaz-ajuste-sinief-11-25-nfce-cnpj-revogado",
+  "chg-confaz-ajuste-sinief-43-25-altera-efeitos-11-25",
+  "chg-confaz-ajuste-sinief-12-26-revoga-11-25",
+  "chg-confaz-ato-cotepe-69-26-efd-layout-2027",
 ];
 
 for (const id of requiredBackfillIds) {
@@ -67,6 +84,49 @@ const documentSet = new Set(changeSeed.flatMap((change) => change.documents));
 for (const doc of ["DANFSe", "RTC", "PAA", "CIOT", "Split Payment"]) {
   assert.ok(documentSet.has(doc), `documento retroativo ausente: ${doc}`);
 }
+
+const ajusteSinief11 = changeSeed.find(
+  (change) => change.id === "chg-confaz-ajuste-sinief-11-25-nfce-cnpj-revogado",
+);
+assert.ok(ajusteSinief11, "seed deve conter Ajuste SINIEF 11/25");
+assert.equal(ajusteSinief11.documentType, "AJUSTE_SINIEF");
+assert.equal(ajusteSinief11.legalStatus, "REVOKED");
+assert.equal(ajusteSinief11.hasTechnicalNote, false);
+assert.equal(ajusteSinief11.normativeBeforeTechnicalNote, true);
+assert.ok(ajusteSinief11.laterAlteredBy.includes("Ajuste SINIEF 12/26"));
+assert.ok(ajusteSinief11.products.includes("Gerencie Aqui"));
+
+const atoCotepe69 = changeSeed.find((change) => change.id === "chg-confaz-ato-cotepe-69-26-efd-layout-2027");
+assert.ok(atoCotepe69, "seed deve conter Ato COTEPE/ICMS 69/26");
+assert.equal(atoCotepe69.documentType, "ATO_COTEPE_ICMS");
+assert.equal(atoCotepe69.effectsDate, "2027-01-01");
+assert.equal(atoCotepe69.hasTechnicalNote, true);
+
+const ajusteUrls = confazAnnualUrlCandidates("AJUSTE_SINIEF", 2026);
+assert.deepEqual(ajusteUrls, [
+  "https://www.confaz.fazenda.gov.br/legislacao/ajustes/2026",
+  "https://www.confaz.fazenda.gov.br/legislacao/ajustes/2026/2026",
+]);
+
+const sampleEntries = extractConfazSummaryEntries(
+  `
+    <h1>AJUSTES SINIEF 2026</h1>
+    <p>SUMARIO</p>
+    <a href="/legislacao/ajustes/2026/AJ012_26">012</a>
+    Revoga o Ajuste SINIEF no 11, de 29 de abril de 2025.
+    <a href="/legislacao/ajustes/2026/AJ013_26">013</a>
+    Altera o Ajuste SINIEF no 12, de 29 de abril de 2025.
+  `,
+  {
+    kind: "AJUSTE_SINIEF",
+    year: 2026,
+    url: "https://www.confaz.fazenda.gov.br/legislacao/ajustes/2026/2026",
+    sourceName: "CONFAZ - Ajustes SINIEF 2026",
+  },
+);
+assert.equal(sampleEntries.length, 2, "parser deve extrair itens do sumario CONFAZ");
+assert.equal(sampleEntries[0].documentNumber, "12/26");
+assert.match(sampleEntries[0].officialUrl, /AJ012_26$/);
 
 const nfseCnpjOutage = changeSeed.find(
   (change) => change.id === "chg-nfse-cnpj-indisponibilidade-2026-07-25",
@@ -116,7 +176,7 @@ assert.ok(
 );
 assert.equal(
   rssItems[0].change.id,
-  "chg-nfse-cnpj-indisponibilidade-2026-07-25",
+  "chg-confaz-ajuste-sinief-11-25-nfce-cnpj-revogado",
   "RSS deve priorizar a mudanca mais recente por deteccao",
 );
 

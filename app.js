@@ -1,11 +1,13 @@
 import {
   calendarSeed,
   changeSeed,
+  documentTypeLabels,
   frequencyLabels,
+  legalStatusLabels,
   severityLabels,
   sourceSeed,
   statusLabels,
-} from "./data.js?v=20260714-acbr-calendar";
+} from "./data.js?v=20260716-confaz-legal";
 
 const storageKeys = {
   changes: "monitor-fiscal:changes",
@@ -35,6 +37,14 @@ const state = {
   document: "ALL",
   severity: "ALL",
   status: "ALL",
+  documentType: "ALL",
+  legalStatus: "ALL",
+  product: "ALL",
+  technicalNote: "ALL",
+  subsequentChange: "ALL",
+  reformTax: "ALL",
+  effectiveWindow: "ALL",
+  year: "ALL",
   selectedChangeId: "chg-nfe-nt-2026",
   detailDialogChangeId: null,
   rulerStartDay: -30,
@@ -200,6 +210,14 @@ function changeText(change) {
     change.action,
     change.changedExcerpt,
     change.theme,
+    change.subjectMain,
+    change.documentType,
+    change.documentNumber,
+    change.documentYear,
+    change.technicalNoteRelated,
+    change.alertFlag,
+    change.products?.join(" "),
+    change.relatedDocuments?.join(" "),
   ]
     .filter(Boolean)
     .join(" ");
@@ -257,6 +275,9 @@ function calendarKindLabel(change) {
   if (isOperationalStop(change)) return "Indisponibilidade";
 
   const text = normalizedChangeText(change);
+  if (text.includes("revoga")) return "Revogacao";
+  if (text.includes("retifica")) return "Retificacao";
+  if (text.includes("ato cotepe")) return "Prazo COTEPE";
   if (text.includes("homologacao")) return "Homologacao";
   if (text.includes("producao")) return "Producao";
   if (text.includes("obrigatoriedade") || text.includes("obrigatorio")) return "Obrigatoriedade";
@@ -275,16 +296,22 @@ function hashNumber(value) {
 }
 
 function enrichedChange(change) {
+  const source = sourceFor(change);
   const baseDate = change.publicationDate ?? change.detectedAt.slice(0, 10);
   const derivedProtocol = `2026/${String(70 + (hashNumber(change.id) % 120)).padStart(4, "0")}`;
 
-  return {
+  const enriched = {
     ...change,
     protocol: change.protocol ?? derivedProtocol,
     publicationDate: baseDate,
+    douPublicationDate: change.douPublicationDate ?? "",
     homologationDate: change.homologationDate ?? addDays(baseDate, 20),
     productionDate: change.productionDate ?? (isOperationalStop(change) ? "" : addDays(baseDate, 42)),
     effectiveDate: change.effectiveDate ?? "",
+    effectsDate: change.effectsDate ?? change.productionDate ?? "",
+    documentType: inferDocumentType(change, source),
+    documentNumber: change.documentNumber ?? "",
+    documentYear: change.documentYear ?? Number(yearForChange(change)),
     evidenceUrl: change.evidenceUrl ?? "",
     area:
       change.area ??
@@ -295,7 +322,21 @@ function enrichedChange(change) {
         : "Fiscal"),
     evidence: change.evidence ?? "",
     changedExcerpt: change.changedExcerpt ?? change.diffAfter ?? change.summary,
+    products: productsForChange(change),
+    relatedDocuments: change.relatedDocuments ?? [],
+    originalDocument: change.originalDocument ?? "",
+    altersDocuments: change.altersDocuments ?? [],
+    changedBy: change.changedBy ?? [],
+    laterAlteredBy: change.laterAlteredBy ?? [],
+    technicalNoteRelated: change.technicalNoteRelated ?? (hasTechnicalNote(change) ? "Identificada" : "Nao localizada"),
+    hasTechnicalNote: hasTechnicalNote(change),
+    hasSubsequentChange: hasSubsequentChange(change),
+    normativeBeforeTechnicalNote: Boolean(change.normativeBeforeTechnicalNote),
+    alertFlag: change.alertFlag ?? "",
+    subjectMain: change.subjectMain ?? change.theme ?? "",
   };
+  enriched.legalStatus = inferLegalStatus(enriched);
+  return enriched;
 }
 
 function deadlineLabel(change) {
@@ -421,6 +462,69 @@ function renderSeverityHelp(extraClass = "") {
 
 function statusClass(status) {
   return `status status-${status.toLowerCase().replace("_", "-")}`;
+}
+
+function labelFromMap(labels, value, fallback = "Nao classificado") {
+  return labels[value] ?? fallback;
+}
+
+function inferDocumentType(change, source = sourceFor(change)) {
+  if (change.documentType) return change.documentType;
+  if (source.documentType && source.documentType !== "OTHER") return source.documentType;
+  const text = [change.title, change.theme, change.summary, source.name].filter(Boolean).join(" ");
+  if (/ajuste\s+sinief/i.test(text)) return "AJUSTE_SINIEF";
+  if (/ato\s+cotepe/i.test(text)) return "ATO_COTEPE_ICMS";
+  if (/nota[s ]+t[eÃ©]cnica|(^|\s)nt(\s|$)/i.test(text)) return "TECHNICAL_NOTE";
+  if (/schema|xsd|xml/i.test(text)) return "SCHEMA";
+  if (/retifica[cÃ§][aÃ£]o/i.test(text)) return "RETIFICATION";
+  if (/republica[cÃ§][aÃ£]o/i.test(text)) return "REPUBLICATION";
+  return "OTHER";
+}
+
+function inferLegalStatus(change) {
+  if (change.legalStatus) return change.legalStatus;
+  const text = normalizedChangeText(change);
+  const days = dayDistance(change.effectiveDate);
+  if (text.includes("revoga") || text.includes("revogado")) return "REVOKED";
+  if (text.includes("retifica")) return "RECTIFIED";
+  if (text.includes("adiad") || text.includes("prorrog")) return "POSTPONED";
+  if (text.includes("altera") || text.includes("nova redacao")) return "CHANGED";
+  if (!change.effectiveDate) return change.status === "IN_REVIEW" ? "IN_ANALYSIS" : "PUBLISHED";
+  if (days !== null && days > 0) return "FUTURE_EFFECTIVE";
+  return "EFFECTIVE";
+}
+
+function productsForChange(change) {
+  return change.products?.length ? change.products : [];
+}
+
+function hasTechnicalNote(change) {
+  if (typeof change.hasTechnicalNote === "boolean") return change.hasTechnicalNote;
+  const text = [change.title, change.summary, change.theme, change.technicalNoteRelated]
+    .filter(Boolean)
+    .join(" ");
+  return /nota[s ]+t[eÃ©]cnica|(^|\s)nt(\s|$)/i.test(text);
+}
+
+function hasSubsequentChange(change) {
+  if (typeof change.hasSubsequentChange === "boolean") return change.hasSubsequentChange;
+  return Boolean(change.laterAlteredBy?.length || change.changedBy?.length);
+}
+
+function isReformTaxChange(change) {
+  const text = normalizedChangeText(change);
+  return /\b(reforma tributaria|rtc|ibs|cbs|imposto seletivo|lc 214|lei complementar n.? 214|comite gestor)\b/i.test(
+    text,
+  );
+}
+
+function effectiveWindowFor(change) {
+  const days = dayDistance(change.effectiveDate);
+  if (!change.effectiveDate || days === null) return "NONE";
+  if (days < 0) return "PAST";
+  if (days <= 30) return "NEXT_30";
+  if (days <= 90) return "NEXT_90";
+  return "FUTURE";
 }
 
 function isDownloadEvidence(value) {
@@ -572,8 +676,16 @@ function renderEvidence(change, source) {
             <dd>${formatDate(change.publicationDate)}</dd>
           </div>
           <div>
-            <dt>Obrigatoriedade</dt>
+            <dt>DOU</dt>
+            <dd>${formatDate(change.douPublicationDate)}</dd>
+          </div>
+          <div>
+            <dt>Vigencia</dt>
             <dd>${formatDate(change.effectiveDate)}</dd>
+          </div>
+          <div>
+            <dt>Efeitos</dt>
+            <dd>${formatDate(change.effectsDate)}</dd>
           </div>
         </dl>
         <div class="button-row evidence-actions">
@@ -646,6 +758,8 @@ function titleSubjectForDetectedChange(source, change = {}) {
   const docLabel = readableList(docs);
 
   if (isOperationalStop(change)) return `acompanhar indisponibilidade de ${docLabel}`;
+  if (/ajuste\s+sinief/i.test(text)) return `analisar Ajuste SINIEF em ${docLabel}`;
+  if (/ato\s+cotepe/i.test(text)) return `analisar Ato COTEPE em ${docLabel}`;
   if (/esquemas?\s+xml|schema|xsd|xml/i.test(text)) return `revisar schemas ${docLabel}`;
   if (/nota[s ]+t[eé]cnica|(^|\s)nt(\s|$)/i.test(text)) return `revisar nota tecnica ${docLabel}`;
   if (/cbenef/i.test(text)) return "conferir tabela cBenef";
@@ -670,33 +784,78 @@ function filteredChanges() {
   const query = state.query.trim().toLowerCase();
   return store.changes
     .filter((change) => {
-      const source = sourceFor(change);
+      const enriched = enrichedChange(change);
+      const source = sourceFor(enriched);
       const haystack = [
-        displayTitleForChange(change),
-        change.title,
-        change.summary,
-        change.theme,
+        displayTitleForChange(enriched),
+        enriched.title,
+        enriched.summary,
+        enriched.theme,
+        enriched.subjectMain,
+        enriched.documentNumber,
+        enriched.documentYear,
+        enriched.publicationDate,
+        enriched.effectiveDate,
+        enriched.douPublicationDate,
+        enriched.effectsDate,
+        enriched.technicalNoteRelated,
+        enriched.alertFlag,
         source.name,
         source.agency,
-        change.documents.join(" "),
-        change.uf ?? "NACIONAL",
+        labelFromMap(documentTypeLabels, enriched.documentType, enriched.documentType),
+        labelFromMap(legalStatusLabels, enriched.legalStatus, enriched.legalStatus),
+        enriched.documents.join(" "),
+        enriched.products.join(" "),
+        enriched.relatedDocuments.join(" "),
+        enriched.uf ?? "NACIONAL",
       ]
         .join(" ")
         .toLowerCase();
       const matchesQuery = !query || haystack.includes(query);
       const matchesUf =
         state.uf === "ALL" ||
-        (state.uf === "NACIONAL" ? !change.uf : change.uf === state.uf);
+        (state.uf === "NACIONAL" ? !enriched.uf : enriched.uf === state.uf);
       const matchesDocument =
-        state.document === "ALL" || change.documents.includes(state.document);
-      const matchesSeverity = state.severity === "ALL" || change.severity === state.severity;
-      const matchesStatus = state.status === "ALL" || change.status === state.status;
+        state.document === "ALL" || enriched.documents.includes(state.document);
+      const matchesSeverity = state.severity === "ALL" || enriched.severity === state.severity;
+      const matchesStatus = state.status === "ALL" || enriched.status === state.status;
+      const matchesDocumentType =
+        state.documentType === "ALL" || enriched.documentType === state.documentType;
+      const matchesLegalStatus =
+        state.legalStatus === "ALL" || enriched.legalStatus === state.legalStatus;
+      const matchesProduct = state.product === "ALL" || enriched.products.includes(state.product);
+      const matchesTechnicalNote =
+        state.technicalNote === "ALL" ||
+        (state.technicalNote === "YES" ? enriched.hasTechnicalNote : !enriched.hasTechnicalNote);
+      const matchesSubsequentChange =
+        state.subsequentChange === "ALL" ||
+        (state.subsequentChange === "YES"
+          ? enriched.hasSubsequentChange
+          : !enriched.hasSubsequentChange);
+      const matchesReformTax =
+        state.reformTax === "ALL" ||
+        (state.reformTax === "YES" ? isReformTaxChange(enriched) : !isReformTaxChange(enriched));
+      const matchesEffectiveWindow =
+        state.effectiveWindow === "ALL" || effectiveWindowFor(enriched) === state.effectiveWindow;
+      const matchesYear =
+        state.year === "ALL" ||
+        String(enriched.documentYear || yearForChange(enriched)) === state.year ||
+        String(enriched.publicationDate).startsWith(state.year) ||
+        String(enriched.effectiveDate).startsWith(state.year);
       return (
         matchesQuery &&
         matchesUf &&
         matchesDocument &&
         matchesSeverity &&
-        matchesStatus
+        matchesStatus &&
+        matchesDocumentType &&
+        matchesLegalStatus &&
+        matchesProduct &&
+        matchesTechnicalNote &&
+        matchesSubsequentChange &&
+        matchesReformTax &&
+        matchesEffectiveWindow &&
+        matchesYear
       );
     })
     .sort((a, b) => {
@@ -1064,6 +1223,28 @@ function renderFilters() {
       ...store.changes.flatMap((change) => change.documents),
     ]),
   ].sort();
+  const enrichedChanges = store.changes.map(enrichedChange);
+  const documentTypes = [...new Set(enrichedChanges.map((change) => change.documentType))].sort(
+    (a, b) =>
+      labelFromMap(documentTypeLabels, a, a).localeCompare(labelFromMap(documentTypeLabels, b, b)),
+  );
+  const legalStatuses = [...new Set(enrichedChanges.map((change) => change.legalStatus))].sort(
+    (a, b) =>
+      labelFromMap(legalStatusLabels, a, a).localeCompare(labelFromMap(legalStatusLabels, b, b)),
+  );
+  const products = [...new Set(enrichedChanges.flatMap((change) => change.products))].sort();
+  const years = [
+    ...new Set(
+      enrichedChanges
+        .flatMap((change) => [
+          change.documentYear,
+          String(change.publicationDate || "").slice(0, 4),
+          String(change.effectiveDate || "").slice(0, 4),
+        ])
+        .map((year) => String(year))
+        .filter((year) => /^\d{4}$/.test(String(year))),
+    ),
+  ].sort();
   return `
     <section class="filters" aria-label="Filtros">
       <label>
@@ -1095,6 +1276,29 @@ function renderFilters() {
             .join("")}
         </select>
       </label>
+      <label>
+        <span>Tipo</span>
+        <select data-filter="documentType">
+          <option value="ALL">Todos</option>
+          ${documentTypes
+            .map(
+              (type) =>
+                `<option value="${escapeHtml(type)}" ${
+                  state.documentType === type ? "selected" : ""
+                }>${escapeHtml(labelFromMap(documentTypeLabels, type, type))}</option>`,
+            )
+            .join("")}
+        </select>
+      </label>
+      <label>
+        <span>Ano</span>
+        <select data-filter="year">
+          <option value="ALL">Todos</option>
+          ${years
+            .map((year) => `<option value="${year}" ${state.year === year ? "selected" : ""}>${year}</option>`)
+            .join("")}
+        </select>
+      </label>
       <div class="filter-field">
         <div class="field-label">
           <span>Criticidade</span>
@@ -1122,6 +1326,69 @@ function renderFilters() {
             .join("")}
         </select>
       </label>
+      <label>
+        <span>Situacao</span>
+        <select data-filter="legalStatus">
+          <option value="ALL">Todas</option>
+          ${legalStatuses
+            .map(
+              (status) =>
+                `<option value="${escapeHtml(status)}" ${
+                  state.legalStatus === status ? "selected" : ""
+                }>${escapeHtml(labelFromMap(legalStatusLabels, status, status))}</option>`,
+            )
+            .join("")}
+        </select>
+      </label>
+      <label>
+        <span>Produto</span>
+        <select data-filter="product">
+          <option value="ALL">Todos</option>
+          ${products
+            .map(
+              (product) =>
+                `<option value="${escapeHtml(product)}" ${
+                  state.product === product ? "selected" : ""
+                }>${escapeHtml(product)}</option>`,
+            )
+            .join("")}
+        </select>
+      </label>
+      <label>
+        <span>Nota Tecnica</span>
+        <select data-filter="technicalNote">
+          <option value="ALL">Todas</option>
+          <option value="YES" ${state.technicalNote === "YES" ? "selected" : ""}>Possui</option>
+          <option value="NO" ${state.technicalNote === "NO" ? "selected" : ""}>Nao possui</option>
+        </select>
+      </label>
+      <label>
+        <span>Alteracao posterior</span>
+        <select data-filter="subsequentChange">
+          <option value="ALL">Todas</option>
+          <option value="YES" ${state.subsequentChange === "YES" ? "selected" : ""}>Possui</option>
+          <option value="NO" ${state.subsequentChange === "NO" ? "selected" : ""}>Nao possui</option>
+        </select>
+      </label>
+      <label>
+        <span>RTC</span>
+        <select data-filter="reformTax">
+          <option value="ALL">Todas</option>
+          <option value="YES" ${state.reformTax === "YES" ? "selected" : ""}>Sim</option>
+          <option value="NO" ${state.reformTax === "NO" ? "selected" : ""}>Nao</option>
+        </select>
+      </label>
+      <label>
+        <span>Vigencia</span>
+        <select data-filter="effectiveWindow">
+          <option value="ALL">Todas</option>
+          <option value="PAST" ${state.effectiveWindow === "PAST" ? "selected" : ""}>Vencida/vigente</option>
+          <option value="NEXT_30" ${state.effectiveWindow === "NEXT_30" ? "selected" : ""}>Proximos 30d</option>
+          <option value="NEXT_90" ${state.effectiveWindow === "NEXT_90" ? "selected" : ""}>Proximos 90d</option>
+          <option value="FUTURE" ${state.effectiveWindow === "FUTURE" ? "selected" : ""}>Futura</option>
+          <option value="NONE" ${state.effectiveWindow === "NONE" ? "selected" : ""}>Sem data</option>
+        </select>
+      </label>
     </section>
   `;
 }
@@ -1136,6 +1403,8 @@ function renderChangeCard(change) {
         <span class="card-kicker">
           <span class="${severityClass(change.severity)}">${severityLabels[change.severity]}</span>
           <span class="protocol-stamp">No ${escapeHtml(enriched.protocol)}</span>
+          <span class="legal-chip">${escapeHtml(labelFromMap(documentTypeLabels, enriched.documentType, enriched.documentType))}</span>
+          <span class="legal-chip">${escapeHtml(labelFromMap(legalStatusLabels, enriched.legalStatus, enriched.legalStatus))}</span>
         </span>
         <strong>${escapeHtml(displayTitleForChange(enriched))}</strong>
         <span>${escapeHtml(source.name)} - ${deadlineLabel(enriched)}</span>
@@ -1155,19 +1424,28 @@ function renderChangeDetail(change) {
           <span class="${severityClass(enriched.severity)}">${severityLabels[enriched.severity]}</span>
           ${renderSeverityHelp()}
           <span class="protocol-stamp">No ${escapeHtml(enriched.protocol)}</span>
+          <span class="legal-chip">${escapeHtml(labelFromMap(documentTypeLabels, enriched.documentType, enriched.documentType))}</span>
+          <span class="legal-chip">${escapeHtml(labelFromMap(legalStatusLabels, enriched.legalStatus, enriched.legalStatus))}</span>
         </div>
         <h2>${escapeHtml(displayTitleForChange(enriched))}</h2>
         <p>${escapeHtml(source.agency)} - ${formatDateTime(enriched.detectedAt)}</p>
       </div>
 
       <dl class="definition-grid">
+        <div><dt>Tipo</dt><dd>${escapeHtml(labelFromMap(documentTypeLabels, enriched.documentType, enriched.documentType))}</dd></div>
+        <div><dt>Numero/Ano</dt><dd>${escapeHtml(enriched.documentNumber || enriched.protocol)}${enriched.documentYear ? ` / ${enriched.documentYear}` : ""}</dd></div>
+        <div><dt>Situacao</dt><dd>${escapeHtml(labelFromMap(legalStatusLabels, enriched.legalStatus, enriched.legalStatus))}</dd></div>
         <div><dt>UF</dt><dd>${escapeHtml(enriched.uf ?? "Nacional")}</dd></div>
         <div><dt>Documento</dt><dd>${escapeHtml(enriched.documents.join(", "))}</dd></div>
+        <div><dt>Produto</dt><dd>${escapeHtml(enriched.products.length ? enriched.products.join(", ") : "Nao classificado")}</dd></div>
         <div><dt>Area</dt><dd>${escapeHtml(enriched.area)}</dd></div>
+        <div><dt>Nota Tecnica</dt><dd>${escapeHtml(enriched.technicalNoteRelated)}</dd></div>
         <div><dt>Confianca</dt><dd>${enriched.confidence}%</dd></div>
       </dl>
 
       ${renderMilestoneGrid(enriched)}
+      ${renderNormativeAlert(enriched)}
+      ${renderLegalRelationship(enriched)}
 
       <section class="change-excerpt">
         <h3>Trecho da mudanca detectado</h3>
@@ -1223,10 +1501,12 @@ function renderChangeDetail(change) {
 function renderMilestoneGrid(change) {
   const milestones = [
     ["Publicacao", change.publicationDate],
+    ["DOU", change.douPublicationDate],
     ["Homologacao", change.homologationDate],
     ["Producao", change.productionDate],
-    ["Obrigatoriedade", change.effectiveDate],
-  ];
+    ["Vigencia", change.effectiveDate],
+    ["Efeitos", change.effectsDate],
+  ].filter(([, value]) => value !== undefined);
   return `
     <div class="milestone-grid">
       ${milestones
@@ -1240,6 +1520,48 @@ function renderMilestoneGrid(change) {
         )
         .join("")}
     </div>
+  `;
+}
+
+function renderNormativeAlert(change) {
+  if (!change.alertFlag && !change.normativeBeforeTechnicalNote) return "";
+  const label = change.alertFlag || "Alteracao normativa identificada antes da Nota Tecnica";
+  return `
+    <section class="normative-alert">
+      <strong>${escapeHtml(label)}</strong>
+      <span>${escapeHtml(change.technicalNoteRelated || "Nota Tecnica ainda nao vinculada")}</span>
+    </section>
+  `;
+}
+
+function renderLegalRelationship(change) {
+  const rows = [
+    ["Assunto", change.subjectMain],
+    ["Documento original", change.originalDocument],
+    ["Altera", change.altersDocuments?.join(", ")],
+    ["Alterado por", change.changedBy?.join(", ")],
+    ["Alteracoes posteriores", change.laterAlteredBy?.join(", ")],
+    ["Relacionados", change.relatedDocuments?.join(", ")],
+  ].filter(([, value]) => value);
+
+  if (!rows.length) return "";
+
+  return `
+    <section class="legal-relationship">
+      <h3>Trilha normativa</h3>
+      <dl>
+        ${rows
+          .map(
+            ([label, value]) => `
+              <div>
+                <dt>${escapeHtml(label)}</dt>
+                <dd>${escapeHtml(value)}</dd>
+              </div>
+            `,
+          )
+          .join("")}
+      </dl>
+    </section>
   `;
 }
 
@@ -1392,7 +1714,14 @@ function renderFontes() {
     .filter((source) => source.active !== false)
     .filter((source) => {
       const query = state.query.trim().toLowerCase();
-      const haystack = [source.name, source.agency, source.uf, source.documents.join(" ")]
+      const haystack = [
+        source.name,
+        source.agency,
+        source.uf,
+        source.year,
+        labelFromMap(documentTypeLabels, source.documentType, source.documentType),
+        source.documents.join(" "),
+      ]
         .join(" ")
         .toLowerCase();
       return !query || haystack.includes(query);
@@ -1498,7 +1827,7 @@ function renderSourceRow(source) {
     <tr>
       <td>
         <strong>${escapeHtml(source.name)}</strong>
-        <span>${escapeHtml(source.agency)}</span>
+        <span>${escapeHtml(source.agency)} - ${escapeHtml(labelFromMap(documentTypeLabels, source.documentType, source.documentType))}${source.year ? ` ${source.year}` : ""}</span>
       </td>
       <td>${escapeHtml(source.uf ?? "Nacional")}</td>
       <td>${escapeHtml(source.documents.join(", "))}</td>
@@ -1876,18 +2205,31 @@ function simulateCheck(sourceId) {
     sourceId: source.id,
     title: titleForDetectedChange(source),
     protocol: `2026/${String(200 + Number(suffix.slice(-3))).padStart(4, "0")}`,
+    documentType: source.documentType ?? "OTHER",
+    documentYear: source.year ?? Number(now.toISOString().slice(0, 4)),
     detectedAt: now.toISOString(),
     publicationDate: now.toISOString().slice(0, 10),
+    douPublicationDate: "",
     homologationDate: addDays(now.toISOString().slice(0, 10), 20),
     productionDate: addDays(now.toISOString().slice(0, 10), 42),
     effectiveDate: addDays(now.toISOString().slice(0, 10), source.severity === "CRITICAL" ? 30 : 60),
+    effectsDate: addDays(now.toISOString().slice(0, 10), source.severity === "CRITICAL" ? 30 : 60),
     area: ["CRITICAL", "HIGH"].includes(source.severity) ? "Desenvolvimento" : "Fiscal",
     evidence: "snapshot automatico da fonte oficial",
     severity: source.severity,
     status: ["CRITICAL", "HIGH"].includes(source.severity) ? "IN_REVIEW" : "DRAFT",
+    legalStatus: "IN_ANALYSIS",
     theme: source.documents.includes("NF-e") ? "Validacao fiscal" : "Outro",
     uf: source.uf,
     documents: source.documents,
+    products: [],
+    relatedDocuments: [],
+    hasTechnicalNote: false,
+    technicalNoteRelated: "Aguardando identificacao ou vinculacao",
+    normativeBeforeTechnicalNote: ["AJUSTE_SINIEF", "ATO_COTEPE_ICMS"].includes(source.documentType),
+    alertFlag: ["AJUSTE_SINIEF", "ATO_COTEPE_ICMS"].includes(source.documentType)
+      ? "Alteracao normativa identificada antes da Nota Tecnica"
+      : "",
     confidence: source.severity === "CRITICAL" ? 91 : 82,
     summary:
       "O hash normalizado mudou apos remocao de menus, rodapes, banners e datas dinamicas.",
